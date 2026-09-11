@@ -1,22 +1,25 @@
 {
- "artifact": "FLOOR-RFC-001 stage-0a calibration receipt (rev 10; review blockers 1 and 3 of 2026-09-11 \u2014 C1\u2013C4 aggregates and the \u00a73 idleAfterMs derivation)",
+ "artifact": "FLOOR-RFC-001 stage-0a calibration receipt (rev 10, second pass; review blockers 1\u20133 of 2026-09-11). AGGREGATE-ONLY: the records are not in the repository.",
  "generatedBy": {
   "script": "trial/calibration/calibrate.py",
-  "sha256": "e79bffab756e38ae1a10d9db0e0f0024504cfaa3a91ac8ab552370e0af0c2799",
+  "sha256": "bd10f2bfb60d74c98b544d6a0a3ba6743a121fa100f94dcec11b73db790af091",
   "python": "3.x stdlib only, deterministic; run from this directory"
  },
  "inputs": {
   "records": {
-   "social": {
-    "path": "trial/calibration/records/social.jsonl",
-    "sha256": "6b94290408fe0d494486a136d8b81542f7e39fc34c2f63c9cd31220fe2126207",
-    "rows": 542
+   "status": "NOT COMMITTED. Held locally by the authorized analyst (Ra's machine) per the disclosure; deletable on request. The first rev-10 pass (d9f6ffc, 2026-09-11 ~18:30\u201320:00Z) published pseudonymized event-level rows on the unmerged PR branch of the fork; the branch history was rewritten to remove them the same day after review (Mica, blocker 1). Clones or caches taken in that window may still hold that commit; nothing can be done about copies already taken except to say so here.",
+   "why": "event-level rows with exact timestamps are re-identifiable even under keyed pseudonyms (a public message's timestamp names its author's pseudonym), and the disclosure promised aggregates only.",
+   "digests": {
+    "social": {
+     "pseudonymizedSha256": "6b94290408fe0d494486a136d8b81542f7e39fc34c2f63c9cd31220fe2126207",
+     "rows": 542
+    },
+    "general": {
+     "pseudonymizedSha256": "fc050c8b111b6678055a5a3dc9c141a757c953b24e2672b7efbeb393b9cb48df",
+     "rows": 152
+    }
    },
-   "general": {
-    "path": "trial/calibration/records/general.jsonl",
-    "sha256": "fc050c8b111b6678055a5a3dc9c141a757c953b24e2672b7efbeb393b9cb48df",
-    "rows": 152
-   }
+   "digestPurpose": "the analyst's audit trail: a re-run over the same local records reproduces report.json byte-for-byte (its digest below); the digests themselves reveal nothing."
   },
   "rawHarvest": {
    "note": "The raw harvest (timestamp, author id, message id, bytes, thread flag; NO text field) is NOT committed: author and message ids are stable, rehydratable references. It stays local to the analyst's machine per the disclosure. The committed records are derived from it by pseudonymize.py with an HMAC key held outside the repository.",
@@ -35,7 +38,13 @@
   "pseudonymization": {
    "script": "trial/calibration/pseudonymize.py",
    "method": "author -> <kind-initial>-HMAC_SHA256(key, authorId)[:12]; message ids dropped; key = CALIBRATION_HMAC_KEY, not in the repository",
-   "exclusionsApplied": []
+   "exclusionsApplied": [],
+   "note": "a local step only; its output is the gitignored records/ dir. The HMAC key is not in the repository."
+  },
+  "fixture": {
+   "path": "trial/calibration/fixture/",
+   "made_by": "make_fixture.py (seeded, synthetic, unrelated to any real message)",
+   "purpose": "exercises calibrate.py \u2014 determinism and the agent-origin cost column (test_calibrate.py)"
   }
  },
  "sources": {
@@ -140,17 +149,18 @@
    60000
   ],
   "fragmentation": "share of a kind's self-continuation gaps > T",
-  "holdTax": "count of handoff gaps < T, and the median of (T - gap) over them"
+  "holdTax": "count of handoff gaps < T, and the median of (T - gap) over them",
+  "holdTaxAgentOrigin": "the same over handoffs whose departing speaker is an agent \u2014 the only handoffs an agent-only burst hold can delay; the column \u00a76 cites (all-handoff hold tax is descriptive only)"
  },
  "quantile": "nearest-rank: sorted[round(p/100*(n-1))]",
  "outputs": {
   "report.json": {
-   "sha256": "81134e77adde3eacd86c7455273660cab931353801af448283e391b3424557fc"
+   "sha256": "d8b7540914753163f5e453bea2719b46fc25796b31b8b7cce87062a89dfe2c10"
   },
   "REPORT.md": "readable subset of report.json"
  },
  "disclosureAndAuthorization": {
-  "status": "DISCLOSED, OPT-OUT (standing exclusion offer). Not opt-in consent: participants were told, offered exclusion, and none has asked; the corpus is authorized by the room's operator and disclosed to its regulars, which is a weaker claim than 'consented' and is the claim this receipt makes.",
+  "status": "DISCLOSED, OPERATOR-AUTHORIZED, OPT-OUT (standing exclusion offer). Not opt-in consent: participants were told, offered exclusion, and none has asked. That is a weaker claim than 'consented' and is the claim this receipt makes; the RFC's \u00a712 says the same.",
   "messages": [
    {
     "role": "ask (listen-only observer proposal, content-free record shape, deletable ledger)",
@@ -190,8 +200,8 @@
   ],
   "generalRoomDisclosure": "the ask/plan/results thread above IS the #general disclosure; no separate note was posted there",
   "retention": "raw harvest local to the analyst's machine, deletable on request; committed artifacts are pseudonymized records and aggregates",
-  "exclusionProcedure": "a participant (person or resident) asks in-channel or by DM; re-run pseudonymize.py with --exclude <authorId> for each affected room, re-run calibrate.py, commit the new records/report/manifest. Both record and report digests change, so the previously published aggregate is invalidated by construction rather than silently kept; the RFC cites this manifest by digest.",
-  "knownInclusion": "the analyst's own persona rows are inside the corpus (persona:weft-9f6560: 17 rows in general, and the social room's final row is the disclosure note itself). Left in as harvested; they are agent-kind rows and do not touch the human columns."
+  "exclusionProcedure": "a participant (person or resident) asks in-channel or by DM; the analyst re-runs pseudonymize.py --exclude <authorId> per affected room and calibrate.py over the local records, and commits the new report + manifest (digests change, so the published aggregate is invalidated by construction). Honest limit: aggregates already published in earlier commits of this branch, and any copy of the briefly published rows (see inputs.records.status), cannot be recalled.",
+  "knownInclusion": "the analyst's own persona rows are inside the corpus (agent-kind; they do not touch the human columns). Left in as harvested."
  },
  "idleAfterMsDerivation": {
   "rule": "p90 of the room's all-pairs gap over the whole measured interval, pooled across kinds, no active-hours trim, rounded up to the next whole minute",

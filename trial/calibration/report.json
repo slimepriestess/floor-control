@@ -171,7 +171,12 @@
       "n": 0,
       "of": 358
      },
-     "median_imposed_delay_ms": null
+     "median_imposed_delay_ms": null,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 2000,
@@ -187,7 +192,12 @@
       "n": 1,
       "of": 358
      },
-     "median_imposed_delay_ms": 298
+     "median_imposed_delay_ms": 298,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 2500,
@@ -203,7 +213,12 @@
       "n": 1,
       "of": 358
      },
-     "median_imposed_delay_ms": 798
+     "median_imposed_delay_ms": 798,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 3000,
@@ -219,7 +234,12 @@
       "n": 1,
       "of": 358
      },
-     "median_imposed_delay_ms": 1298
+     "median_imposed_delay_ms": 1298,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 5000,
@@ -235,7 +255,12 @@
       "n": 3,
       "of": 358
      },
-     "median_imposed_delay_ms": 1508
+     "median_imposed_delay_ms": 1508,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 8000,
@@ -251,7 +276,12 @@
       "n": 8,
       "of": 358
      },
-     "median_imposed_delay_ms": 1378
+     "median_imposed_delay_ms": 1378,
+     "agent_origin_handoffs_under_T": {
+      "n": 4,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": 1162
     },
     {
      "T_ms": 10000,
@@ -267,7 +297,12 @@
       "n": 13,
       "of": 358
      },
-     "median_imposed_delay_ms": 3055
+     "median_imposed_delay_ms": 3055,
+     "agent_origin_handoffs_under_T": {
+      "n": 6,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": 2397
     },
     {
      "T_ms": 15000,
@@ -283,7 +318,12 @@
       "n": 22,
       "of": 358
      },
-     "median_imposed_delay_ms": 5728
+     "median_imposed_delay_ms": 5728,
+     "agent_origin_handoffs_under_T": {
+      "n": 11,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": 5488
     },
     {
      "T_ms": 20000,
@@ -299,7 +339,12 @@
       "n": 41,
       "of": 358
      },
-     "median_imposed_delay_ms": 5453
+     "median_imposed_delay_ms": 5453,
+     "agent_origin_handoffs_under_T": {
+      "n": 14,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": 8348
     },
     {
      "T_ms": 30000,
@@ -315,7 +360,12 @@
       "n": 74,
       "of": 358
      },
-     "median_imposed_delay_ms": 11092
+     "median_imposed_delay_ms": 11092,
+     "agent_origin_handoffs_under_T": {
+      "n": 23,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": 13182
     },
     {
      "T_ms": 60000,
@@ -331,7 +381,12 @@
       "n": 178,
       "of": 358
      },
-     "median_imposed_delay_ms": 26185
+     "median_imposed_delay_ms": 26185,
+     "agent_origin_handoffs_under_T": {
+      "n": 55,
+      "of": 183
+     },
+     "agent_origin_median_imposed_delay_ms": 24255
     }
    ]
   },
@@ -506,7 +561,12 @@
       "n": 0,
       "of": 112
      },
-     "median_imposed_delay_ms": null
+     "median_imposed_delay_ms": null,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 2000,
@@ -522,7 +582,12 @@
       "n": 2,
       "of": 112
      },
-     "median_imposed_delay_ms": 204
+     "median_imposed_delay_ms": 204,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 2500,
@@ -538,7 +603,12 @@
       "n": 3,
       "of": 112
      },
-     "median_imposed_delay_ms": 704
+     "median_imposed_delay_ms": 704,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 3000,
@@ -554,7 +624,12 @@
       "n": 3,
       "of": 112
      },
-     "median_imposed_delay_ms": 1204
+     "median_imposed_delay_ms": 1204,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 5000,
@@ -570,7 +645,12 @@
       "n": 6,
       "of": 112
      },
-     "median_imposed_delay_ms": 79
+     "median_imposed_delay_ms": 79,
+     "agent_origin_handoffs_under_T": {
+      "n": 0,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": null
     },
     {
      "T_ms": 8000,
@@ -586,7 +666,12 @@
       "n": 10,
       "of": 112
      },
-     "median_imposed_delay_ms": 3044
+     "median_imposed_delay_ms": 3044,
+     "agent_origin_handoffs_under_T": {
+      "n": 1,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": 2003
     },
     {
      "T_ms": 10000,
@@ -602,7 +687,12 @@
       "n": 13,
       "of": 112
      },
-     "median_imposed_delay_ms": 4003
+     "median_imposed_delay_ms": 4003,
+     "agent_origin_handoffs_under_T": {
+      "n": 1,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": 4003
     },
     {
      "T_ms": 15000,
@@ -618,7 +708,12 @@
       "n": 16,
       "of": 112
      },
-     "median_imposed_delay_ms": 8965
+     "median_imposed_delay_ms": 8965,
+     "agent_origin_handoffs_under_T": {
+      "n": 2,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": 2344
     },
     {
      "T_ms": 20000,
@@ -634,7 +729,12 @@
       "n": 25,
       "of": 112
      },
-     "median_imposed_delay_ms": 10476
+     "median_imposed_delay_ms": 10476,
+     "agent_origin_handoffs_under_T": {
+      "n": 3,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": 7344
     },
     {
      "T_ms": 30000,
@@ -650,7 +750,12 @@
       "n": 31,
       "of": 112
      },
-     "median_imposed_delay_ms": 15067
+     "median_imposed_delay_ms": 15067,
+     "agent_origin_handoffs_under_T": {
+      "n": 4,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": 17344
     },
     {
      "T_ms": 60000,
@@ -666,7 +771,12 @@
       "n": 46,
       "of": 112
      },
-     "median_imposed_delay_ms": 40364
+     "median_imposed_delay_ms": 40364,
+     "agent_origin_handoffs_under_T": {
+      "n": 9,
+      "of": 38
+     },
+     "agent_origin_median_imposed_delay_ms": 29977
     }
    ]
   }
@@ -842,7 +952,12 @@
      "n": 0,
      "of": 470
     },
-    "median_imposed_delay_ms": null
+    "median_imposed_delay_ms": null,
+    "agent_origin_handoffs_under_T": {
+     "n": 0,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": null
    },
    {
     "T_ms": 2000,
@@ -858,7 +973,12 @@
      "n": 3,
      "of": 470
     },
-    "median_imposed_delay_ms": 298
+    "median_imposed_delay_ms": 298,
+    "agent_origin_handoffs_under_T": {
+     "n": 0,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": null
    },
    {
     "T_ms": 2500,
@@ -874,7 +994,12 @@
      "n": 4,
      "of": 470
     },
-    "median_imposed_delay_ms": 798
+    "median_imposed_delay_ms": 798,
+    "agent_origin_handoffs_under_T": {
+     "n": 0,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": null
    },
    {
     "T_ms": 3000,
@@ -890,7 +1015,12 @@
      "n": 4,
      "of": 470
     },
-    "median_imposed_delay_ms": 1298
+    "median_imposed_delay_ms": 1298,
+    "agent_origin_handoffs_under_T": {
+     "n": 0,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": null
    },
    {
     "T_ms": 5000,
@@ -906,7 +1036,12 @@
      "n": 9,
      "of": 470
     },
-    "median_imposed_delay_ms": 1508
+    "median_imposed_delay_ms": 1508,
+    "agent_origin_handoffs_under_T": {
+     "n": 0,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": null
    },
    {
     "T_ms": 8000,
@@ -922,7 +1057,12 @@
      "n": 18,
      "of": 470
     },
-    "median_imposed_delay_ms": 2003
+    "median_imposed_delay_ms": 2003,
+    "agent_origin_handoffs_under_T": {
+     "n": 5,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": 1162
    },
    {
     "T_ms": 10000,
@@ -938,7 +1078,12 @@
      "n": 26,
      "of": 470
     },
-    "median_imposed_delay_ms": 3162
+    "median_imposed_delay_ms": 3162,
+    "agent_origin_handoffs_under_T": {
+     "n": 7,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": 3055
    },
    {
     "T_ms": 15000,
@@ -954,7 +1099,12 @@
      "n": 38,
      "of": 470
     },
-    "median_imposed_delay_ms": 6559
+    "median_imposed_delay_ms": 6559,
+    "agent_origin_handoffs_under_T": {
+     "n": 13,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": 5488
    },
    {
     "T_ms": 20000,
@@ -970,7 +1120,12 @@
      "n": 66,
      "of": 470
     },
-    "median_imposed_delay_ms": 6910
+    "median_imposed_delay_ms": 6910,
+    "agent_origin_handoffs_under_T": {
+     "n": 17,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": 8348
    },
    {
     "T_ms": 30000,
@@ -986,7 +1141,12 @@
      "n": 105,
      "of": 470
     },
-    "median_imposed_delay_ms": 12973
+    "median_imposed_delay_ms": 12973,
+    "agent_origin_handoffs_under_T": {
+     "n": 27,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": 13182
    },
    {
     "T_ms": 60000,
@@ -1002,7 +1162,12 @@
      "n": 224,
      "of": 470
     },
-    "median_imposed_delay_ms": 29238
+    "median_imposed_delay_ms": 29238,
+    "agent_origin_handoffs_under_T": {
+     "n": 64,
+     "of": 221
+    },
+    "agent_origin_median_imposed_delay_ms": 25009
    }
   ]
  },

@@ -8,7 +8,10 @@
   `burstReleaseMs` has one lifecycle owner and conformance vectors; C3
   claims only what timestamp/author/bytes data can show; and stage 0b's
   counterfactual lifecycle is normative and matches the instrument branch.
-  Rev 9 added the stage-0a calibration block: the
+  Second pass (same day, after Mica's re-review): the receipt is
+  aggregate-only (records stay local), §6's burst cost uses the
+  agent-origin denominator, and §9 closes the 0b classes and the
+  exactly-once terminal. Rev 9 added the stage-0a calibration block: the
   rhythm-observation backscroll harvest (2026-08-19) measured real-room
   rhythm against the trial rig's assumptions, and one published finding
   was corrected against it (2026-08-25, §12 calibration); also folds
@@ -439,9 +442,14 @@ of the two kinds of participant who think:
   adapter operation above is the preferred carrier. Where an adapter
   cannot batch, the **arbiter** holds the floor for `burstReleaseMs`
   (default 2500 ms) of holder silence before releasing. At 2.5 s the
-  measured cost is near zero (4 of 470 handoffs delayed, 0.8 s median)
-  and 77 % of genuine agent continuations coalesce (§12). The rule, as
-  one lifecycle with one owner:
+  measured cost is zero in the calibration corpus: **0 of 221
+  agent-origin handoffs** (social 0/183, #general 0/38) fall inside the
+  window — the only handoffs an agent-only hold can delay are those whose
+  departing speaker is an agent, and that is the denominator (rev 10
+  second pass, Mica's B2; the earlier "4 of 470" counted every handoff,
+  and all four were human-origin, unreachable by this mechanism) — while
+  77 % of genuine agent continuations (93/121) coalesce (§12, receipt
+  sweep, agent-origin column). The rule, as one lifecycle with one owner:
   - **Owner: the arbiter.** The burst hold is arbiter state on the live
     grant, `{grantId, generation, lastSpeechAt}`. The adapter does not
     delay its own `release`; the arbiter never ignores or delays a
@@ -575,7 +583,7 @@ which is what `subjectRef` exists for.
 
   | event | field | codes |
   |---|---|---|
-  | `grant/declined` | `cause` | `stale-head` (§2.2), `withdrawn-in-shadow` (stage 0b only, §12) |
+  | `grant/declined` | `cause` | `stale-head` (§2.2), `participant` (the holder's own decline — no reason text; the act is the reason), `withdrawn-in-shadow` (stage 0b only, §12) |
   | `bid/suspended` | `cause` | `stale-head` |
   | `bid/reactivated` | `cause` | `reaffirmation`, `head-advance` |
   | `bid/staled` | `cause` | `contract-change`, `process-restart` |
@@ -587,9 +595,12 @@ which is what `subjectRef` exists for.
   | arbitration `hold` (a decision, ledgered when the logic is asked) | `cause` | `floor-occupied`, `no-open-bids`, `cooldown`, `chair-discretion` |
   | `op-error` (a refused op; the text is protocol text, not the participant's) | `cause` | `unknown-op`, `not-holder`, `late-accept`, `one-bid-rule`, `no-shadow-analog` (stage 0b), `rank` |
   | `would-have-offered` (stage 0b only) | — | an undelivered offer, ledgered; its withdrawal is `grant/declined cause=withdrawn-in-shadow` |
+  | `shadow-outcome` (stage 0b only) | `class` | `accept-on-speech`, `held-coalesced`, `blocked`, `unoffered`, `post-expiry`, `unbid` |
+  | `op-unconsented` (stage 0b only) | `op` | the op verb only; args dropped |
+  | `bid/consumed` (every stage; the exactly-once terminal, §12 0b) | `by` | `accepted`, `cancelled` (owner), `spent-out-of-band`, `expired` (own `expiresAt`), `staled` (contract-change / process-restart; revalidate or drop), `lapsed` (§2.5; cannot occur in 0b) |
 
-  Rules: a ledger schema MUST reject any `cause`/`terminal` value outside
-  the set (a contract MAY narrow the set for its logic, never widen it
+  Rules: a ledger schema MUST reject any `cause`/`terminal`/`class`/`by`
+  value outside the set (a contract MAY narrow the set for its logic, never widen it
   without a revision of this section); **free text never enters the
   metadata ledger** — there is no free-text reason field, so there is
   nothing to minimize. A chair or moderator who wants to *explain* a
@@ -600,6 +611,10 @@ which is what `subjectRef` exists for.
   (`'floor occupied'`, `'process restart — revalidation required'`, and
   `chairRevoke` accepts an operator string into the receipt) — a
   conformance item, listed in §12's rev-10 items, not a licence.
+  Conformance vectors: every code in the table is accepted by the schema
+  (accept-known), and one value outside it per field is rejected
+  (reject-unknown) — both named tests, red if the table and the schema
+  drift apart.
 
 ## 10. Exit gates
 
@@ -749,8 +764,8 @@ only: gaps, transitions, byte lengths; no book, no arbitration, no text
 field by construction, and zero-send is executable conformance at the
 implementation head rather than a comment. This rung calibrates
 lease/TTL/idle knobs against real human+agent rhythms, and has already
-run in consented form via the 14-day historical-backscroll harvest
-(2026-08-19). **(0b) counterfactual shadow** — the arbiter maintains a
+run — on disclosed, operator-authorized, opt-out historical data, not
+affirmative consent — via the 14-day backscroll harvest (2026-08-19). **(0b) counterfactual shadow** — the arbiter maintains a
 real book against the live channel and ledgers what it *would* have
 granted, still sending nothing; this is where fairness order diffs
 against actual speaking order. Its credible live form is **real shadow
@@ -804,9 +819,13 @@ rather than the other way round):**
   history is untouched by offers they never saw. Counterfactual
   *acceptances* and *releases* do apply fairness bookkeeping — they are
   real acts by the participant.
-- **Exactly once.** A bid is consumed by precisely one of: counterfactual
-  acceptance, cancellation by its owner, or `spent-out-of-band`; it is
-  never re-offered after its owner has spoken. Adapters change nothing
+- **Exactly once.** A bid is consumed by precisely one `bid/consumed by=`
+  terminal from the §9 set: `accepted` (counterfactually, by speech),
+  `cancelled` (its owner), `spent-out-of-band`, `expired` (its own
+  `expiresAt`), or `staled` (contract change or process restart —
+  revalidated or dropped, §2.3); `lapsed` cannot occur in 0b because
+  withdrawn offers count nothing. It is never re-offered after its owner
+  has spoken. Adapters change nothing
   about when or whether their participant speaks; the bid is a
   declaration beside the speech, not a gate in front of it.
 - **Evidence gate.** A 0b fairness report is admissible only when the run
@@ -847,13 +866,20 @@ participant did not affirmatively opt in. Two rooms on one server,
 #general 152 (5 human, 7 agent), 19 distinct authors across both (an
 earlier "26 speakers" summed the per-room counts). Records are
 timestamp/author/bytes only — no text field exists to store, per the §9
-audit discipline. **The receipt is `trial/calibration/`**: pseudonymized
-records, the deterministic script whose header is the method, the report
-every number below is read from, and `MANIFEST.json` with input digests,
-interval, denominators, the disclosure/authorization message references,
-retention, and the exclusion procedure (a later exclusion re-runs the
-pipeline and changes the digests, so a published aggregate cannot
-silently outlive the corpus it came from). Four calibration findings, one
+audit discipline. **The receipt is `trial/calibration/`, and it is aggregate-only**: the
+deterministic script whose header is the method, the report every number
+below is read from, `MANIFEST.json` with input digests (held as the
+analyst's audit trail), interval, denominators, the
+disclosure/authorization message references, retention, and the
+exclusion procedure with its honest limits, plus a seeded synthetic
+fixture that exercises the script. The records themselves stay local to
+the analyst, as the disclosure promised — event-level rows with exact
+timestamps are re-identifiable even under keyed pseudonyms, which the
+first rev-10 pass learned by committing them (removed from the branch
+history the same day, Mica's blocker 1; copies taken in that window are
+acknowledged in the manifest). A later exclusion re-runs the pipeline
+locally and changes the committed digests, so a published aggregate
+cannot silently outlive the corpus it came from. Four calibration findings, one
 of which was **corrected** after first publication (2026-08-25) — the
 correction is part of the record:
 
@@ -902,4 +928,6 @@ code, named so the gap is a list and not a surprise:
 5. §2.1: a contract-level bound on `size` where a logic wants one.
 6. §6 human gesture: a stage-0a run that records typing-indicator events,
    so the candidate can be measured before §6 relies on it.
-
+7. §9 / 0b: `bid/consumed` as the one exactly-once terminal, the
+   `shadow-outcome` classes and `op-unconsented` in the schema, and the
+   accept-known / reject-unknown vectors.

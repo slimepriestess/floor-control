@@ -1,8 +1,8 @@
 {
- "artifact": "FLOOR-RFC-001 stage-0a calibration receipt (rev 10, addresses review blocker 1 of 2026-09-11)",
+ "artifact": "FLOOR-RFC-001 stage-0a calibration receipt (rev 10; review blockers 1 and 3 of 2026-09-11 \u2014 C1\u2013C4 aggregates and the \u00a73 idleAfterMs derivation)",
  "generatedBy": {
   "script": "trial/calibration/calibrate.py",
-  "sha256": "9af9d9ca80cd1370a94cf016660cb4b3520360798a6f93ac5c4cdb6bfc5fc745",
+  "sha256": "e79bffab756e38ae1a10d9db0e0f0024504cfaa3a91ac8ab552370e0af0c2799",
   "python": "3.x stdlib only, deterministic; run from this directory"
  },
  "inputs": {
@@ -145,7 +145,7 @@
  "quantile": "nearest-rank: sorted[round(p/100*(n-1))]",
  "outputs": {
   "report.json": {
-   "sha256": "adbce7a5227345dbbb3e9a7f852bb97c85ba3e8295499609623291befe46f4b0"
+   "sha256": "81134e77adde3eacd86c7455273660cab931353801af448283e391b3424557fc"
   },
   "REPORT.md": "readable subset of report.json"
  },
@@ -192,5 +192,24 @@
   "retention": "raw harvest local to the analyst's machine, deletable on request; committed artifacts are pseudonymized records and aggregates",
   "exclusionProcedure": "a participant (person or resident) asks in-channel or by DM; re-run pseudonymize.py with --exclude <authorId> for each affected room, re-run calibrate.py, commit the new records/report/manifest. Both record and report digests change, so the previously published aggregate is invalidated by construction rather than silently kept; the RFC cites this manifest by digest.",
   "knownInclusion": "the analyst's own persona rows are inside the corpus (persona:weft-9f6560: 17 rows in general, and the social room's final row is the disclosure note itself). Left in as harvested; they are agent-kind rows and do not touch the human columns."
+ },
+ "idleAfterMsDerivation": {
+  "rule": "p90 of the room's all-pairs gap over the whole measured interval, pooled across kinds, no active-hours trim, rounded up to the next whole minute",
+  "values": {
+   "social": {
+    "gapP90Ms": 1407323,
+    "idleAfterMs": 1440000,
+    "idleAfterMin": 24,
+    "idleFiringsPerDay": 3.83,
+    "labDefault60sFiringsPerDay": 16.6
+   },
+   "general": {
+    "gapP90Ms": 8480357,
+    "idleAfterMs": 8520000,
+    "idleAfterMin": 142,
+    "idleFiringsPerDay": 1.09,
+    "labDefault60sFiringsPerDay": 5.8
+   }
+  }
  }
 }

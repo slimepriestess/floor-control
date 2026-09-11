@@ -112,3 +112,12 @@ Human self-gap histogram: 0-2s: 1, 2-5s: 6, 5-10s: 7, 10-30s: 24, 30-60s: 16, 60
 | 20.0s | 73/101 (72%) | 23/121 (19%) | 66/470 | 6.9s |
 | 30.0s | 63/101 (62%) | 20/121 (17%) | 105/470 | 13.0s |
 | 1.0m | 47/101 (47%) | 16/121 (13%) | 224/470 | 29.2s |
+
+## §3 idleAfterMs derivation
+
+Rule: p90 of the room's all-pairs gap over the whole measured interval (no active-hours trim, no kind split), rounded up to the next whole minute. `idleFiringsPerDay` is how often `floor/idle` would have fired at that value in the measured interval; the lab default (60 s) is shown beside it.
+
+| room | gap p90 | idleAfterMs | idle/day at that value | idle/day at 60 s |
+|---|---|---|---|---|
+| social | 23.5m | 1440000 (24 min) | 3.83 | 16.6 |
+| general | 2.4h | 8520000 (142 min) | 1.09 | 5.8 |

@@ -1,6 +1,14 @@
 # FLOOR-RFC-001 — The floor protocol: an order book for speaking turns
 
-- **Status:** Draft rev 9 — adds the stage-0a calibration block: the
+- **Status:** Draft rev 10 — answers Mica's rev-9 review (2026-09-11,
+  six blockers): the stage-0a calibration now has a reproducible receipt
+  (`trial/calibration/`, §12) and the numbers it corrected are corrected
+  in place; §9's reason set is enumerated and closed; §3's `idleAfterMs`
+  is a deterministic per-room mapping from the receipt; §6's
+  `burstReleaseMs` has one lifecycle owner and conformance vectors; C3
+  claims only what timestamp/author/bytes data can show; and stage 0b's
+  counterfactual lifecycle is normative and matches the instrument branch.
+  Rev 9 added the stage-0a calibration block: the
   rhythm-observation backscroll harvest (2026-08-19) measured real-room
   rhythm against the trial rig's assumptions, and one published finding
   was corrected against it (2026-08-25, §12 calibration); also folds
@@ -27,7 +35,7 @@
   order-book formulation); protocol freeze, identity/registry design, and
   cautions by Sol; precedent curation by Sol; trial review and phase-3
   rulings by Mica.
-- **Date:** 2026-08-06 · rev 5: 2026-08-14 · rev 6: 2026-08-18 · rev 7: 2026-08-18 · rev 8: 2026-08-19 · rev 8.1: 2026-08-28 · rev 9: 2026-08-28
+- **Date:** 2026-08-06 · rev 5: 2026-08-14 · rev 6: 2026-08-18 · rev 7: 2026-08-18 · rev 8: 2026-08-19 · rev 8.1: 2026-08-28 · rev 9: 2026-08-28 · rev 10: 2026-09-11
 - **Decision record:** four frames in two days, kept so founding main
   encodes none of the stale ones: *manual-as-definition* (8/5, Sol's lean)
   → *automated-as-definition* (8/6 AM, antra: fluid rooms must not be
@@ -99,7 +107,11 @@ createdAt, expiresAt, subjectRef/inReplyTo, readinessKind
 request) · `urgent` (interruption class).
 
 **Prepared speech stays with its author.** The participant retains
-plaintext; the bid carries digest/size/readiness token. On grant, the
+plaintext; the bid carries digest/size/readiness token. The envelope
+defines the `size` field but no bound on it; the measured agent turn is
+p50 1.2 KB / p90 1.9 KB (§12 C4), so a contract that wants a bound has a
+number to set — declaring one is a rev-10 item, not an assumption this
+section makes. On grant, the
 participant verifies the room head/subject is still valid, then emits — if
 stale, it declines or rebids. The floor service is not a warehouse of
 unsent speech unless a room's contract explicitly requires semantic bid
@@ -279,11 +291,29 @@ emit a one-shot `floor/idle` after a quiet lease with a free floor —
 standing-ready participants treat it as a bid opportunity, so liveness
 never depends on an unlogged human nudge. The quiet lease is
 rhythm-calibrated, not universal: the trial's 60 s default is tuned to a
-standing-ready bot fleet, and a real inhabited room is "quiet" by that
-definition ~17 times a day (§12 calibration) — an `idleAfterMs` for an
-inhabited room derives from that room's observed gap distribution (p90
-natural gap, roughly 20+ minutes in the measured rooms), or `floor/idle`
-stays a lab construct there. The one-shot fires once per
+standing-ready bot fleet, and the measured social room is "quiet" by that
+definition 16.6 times a day (§12 C1). **`idleAfterMs` is a static
+contract value with a stated provenance, never a runtime-adaptive one**:
+it lives in the versioned, digested logic contract, so recomputing it at
+runtime would change the digest under live grants — a re-calibration is
+a contract revision (new `logicEpoch`), as any knob change is. Its
+provenance is a completed stage-0a measurement of the room's own binding,
+cited by the receipt's manifest digest (§12). **The mapping is
+deterministic and is computed by the receipt, not by hand** (rev 10,
+closing Mica's blocker 3; rev 9 had written the two rooms' p90s as one
+number): `idleAfterMs` = the p90 of the room's all-pairs gap distribution
+over the whole measured interval — pooled across participant kinds,
+because room silence is a property of the room, not of a kind (the C3
+split rule governs knobs about a *kind's* behaviour; this is not one) —
+with no active-hours or overnight trimming (the p90 already discards the
+long tail; a trimmed variant is a *different contract value*, declared as
+such, not a hidden parameter), rounded up to the next whole minute.
+Measured: social room gap p90 23.5 min → **24 min** (`floor/idle` would
+have fired 3.8×/day in the measured interval, against 16.6×/day at 60 s);
+#general gap p90 2.4 h → **142 min** (1.1×/day, against 5.8). Both rows,
+and the firing rates that let a reader judge them, are in
+`trial/calibration/REPORT.md` (§3 derivation). A room with no completed
+measurement keeps `floor/idle` lab-only. The one-shot fires once per
 quiet epoch and disarms; **re-arm is event-driven only** — a logged
 liveness transition, never a timer (the liveness primitive must not
 become a periodic wake source). **A genuine participant join is a logged
@@ -401,23 +431,76 @@ of the two kinds of participant who think:
   release, no judgment between) should be offered as one atomic adapter
   operation — the trial measured four wire messages per spoken turn,
   which is fine for machines and absurd for anything else.
-- **Emission coalescing (rev 9): an agent turn is a burst, and the burst
-  is one emission.** Harness-driven agents emit a turn as several rapid
-  transport sends (measured: self-continuation p50 0.4 s, sharply
-  bimodal — §12 calibration). All sends inside one grant are one
-  emission; the atomic adapter operation above is the preferred carrier.
-  Where an adapter cannot batch, the arbiter holds the floor
-  `burstReleaseMs` (default 2500 ms) after each send before treating the
-  turn as released — at 2.5 s the measured cost is near zero (a handful
-  of handoffs per hundreds delayed ~0.3 s median) and most genuine
-  continuations coalesce. **This timer is for agent leases only.** Human
-  self-continuation has no detectable burst boundary: its gap
-  distribution (p50 ~52 s) sits on top of the handoff distribution, so
-  every threshold either fragments human turns or taxes real handoffs —
-  there is no knob setting, which is measurement confirming the model
-  above: human turn structure, where the floor ever needs it, derives
-  from native gestures (the typing indicator is the text analog of VAD
-  utterance-end), never from message spacing.
+- **Emission coalescing (rev 9; lifecycle made normative in rev 10,
+  closing Mica's blocker 4): an agent turn is a burst, and the burst is
+  one emission.** Harness-driven agents emit a turn as several rapid
+  transport sends (self-continuation p50 0.4 s, sharply bimodal — §12
+  C3). All qualifying sends inside one grant are one emission; the atomic
+  adapter operation above is the preferred carrier. Where an adapter
+  cannot batch, the **arbiter** holds the floor for `burstReleaseMs`
+  (default 2500 ms) of holder silence before releasing. At 2.5 s the
+  measured cost is near zero (4 of 470 handoffs delayed, 0.8 s median)
+  and 77 % of genuine agent continuations coalesce (§12). The rule, as
+  one lifecycle with one owner:
+  - **Owner: the arbiter.** The burst hold is arbiter state on the live
+    grant, `{grantId, generation, lastSpeechAt}`. The adapter does not
+    delay its own `release`; the arbiter never ignores or delays a
+    received `release`. The base terminal (§2.2, §2.3) stays authoritative:
+    an explicit `grant/release` releases NOW, whatever the hold says. An
+    adapter that batches simply sends `release` after its last send; an
+    adapter that cannot batch sends nothing after each send and the hold
+    releases it. Releasing after every send is therefore never required
+    and defeats nothing — the two carriers converge on the same receipt.
+  - **A qualifying send** is a delivered room-speech record on the grant's
+    binding whose transport-derived author is the holder's participant
+    identity (§6 adapter honesty: raw attribution recorded, identity
+    derived, never taken from display names). Typing indicators, floor
+    ops, reactions, edits, control and system traffic are not sends. A
+    send that the transport reports as failed is not delivered and does
+    not extend anything.
+  - **Binding.** The hold belongs to exactly one `(grantId, generation)`;
+    speech after that grant's terminal receipt does not revive it, and
+    speech by anyone else neither extends nor ends it (the holder holds;
+    interruption is the logic's business, not the timer's).
+  - **Ceiling.** Each qualifying send moves `lastSpeechAt` and extends the
+    hold by at most `burstReleaseMs`, **never past `leaseUntil`**:
+    `lease-expire` stays a terminal on its own clock (§2.4). The hold is a
+    debounce inside the lease, not a lease.
+  - **Failure.** Holder disconnect or crash: the arbiter cannot know, so
+    the lease clock terminates the grant exactly as today (grant-before-
+    cost already means a dead holder costs nobody a wake). Floor-service
+    restart or logic swap: epoch death (§2.3), no hold survives. Stale head
+    or another participant speaking: no effect on the hold (see Binding).
+  - **Kind is structural.** `agent` is the identity class the transport
+    adapter authenticated at join (persona/webhook/harness identity, the
+    same derivation the trial adapter records), never a classification of
+    text, timing or display name. A human-class participant never
+    receives a burst hold — under the native-human model (§6) it holds no
+    grant to hold. A contract MAY narrow further (e.g. hold only for
+    `prepared` readiness); it MUST NOT widen to humans.
+  - **Conformance vectors** (named tests, `trial/`, rev-10 item): two
+    sends 1 s apart inside one grant → one emission, one `released` 2.5 s
+    after the second; explicit `release` after the first send → terminal
+    immediately, the second send is ordinary room speech; the next bidder
+    is offered only after the terminal; a transport-failed send extends
+    nothing; holder disconnect mid-burst → `lease-expired` on the lease
+    clock; a burst that would extend past `leaseUntil` → `lease-expired`,
+    not extension; restart mid-burst → epoch death, no hold; a
+    participant whose display name reads like an agent but whose identity
+    class is human → no hold (negative).
+  **This timer is for agent leases only.** Human self-continuation has no
+  detectable burst boundary: its gap distribution (p50 52 s pooled, 1.6
+  min / 35 s per room) sits on top of the handoff distribution, so every
+  threshold either fragments human turns or taxes real handoffs — there is
+  no knob setting. That is measurement confirming the model above:
+  human turn structure, where the floor ever needs it, derives from a
+  native gesture and never from message spacing. **Which gesture is not
+  yet measured** (rev 10, blocker 5): the typing indicator is the
+  candidate text analog of VAD utterance-end — promising because it is a
+  declared act, not an inferred gap — but the harvest carries no indicator
+  events, absence is ambiguous, and not every client emits one; it
+  becomes the rule when a stage-0a run that records indicator events says
+  so.
 
 **Adapter honesty (trial findings, portal relay).** Transports lie in
 small ways: the trial found deliveries missing thread ids (portal#17) and
@@ -484,12 +567,39 @@ which is what `subjectRef` exists for.
 - The service's ledger records floor events (bid/grant lifecycle, holder,
   durations, hold and decline reasons) — metadata only, never content;
   medium-specific cost fields (ttsChars, voicedMs, sttSeconds) live with
-  transports. Reasons stay on the metadata side of that line only while
-  they remain **closed, bounded protocol values** (`stale-head`,
-  `content`, …): a free-text reason field would be content wearing a
-  reason's name, and any implementation that admits one MUST give it the
-  same minimization treatment as message text (rev 9, carrying Mica's
-  rev-8.1 review note).
+  transports. Reasons stay on the metadata side of that line only because
+  they are **codes from a closed set**, enumerated here (rev 10, closing
+  Mica's rev-9 blocker 2; rev 9 had written the set with an ellipsis and
+  a `content` value nothing defined). The set, by the event that carries
+  it:
+
+  | event | field | codes |
+  |---|---|---|
+  | `grant/declined` | `cause` | `stale-head` (§2.2), `withdrawn-in-shadow` (stage 0b only, §12) |
+  | `bid/suspended` | `cause` | `stale-head` |
+  | `bid/reactivated` | `cause` | `reaffirmation`, `head-advance` |
+  | `bid/staled` | `cause` | `contract-change`, `process-restart` |
+  | `bid/cancelled` | `cause` | `expired`, `participant`, `spent-out-of-band` (stage 0b) |
+  | `bid/lapsed` | `cause` | `ignored-offers` (§2.5) |
+  | `accept/refused` | `cause` | `accept-ttl-elapsed` (§2.4) |
+  | grant terminal receipt (§2.3) | `terminal` | `completed`, `released`, `revoked`, `offer-expired`, `lease-expired`, `declined` |
+  | `grant/revoked` | `cause` | `chair`, `moderation`, `epoch-death` — the acting identity is its own field, never part of the code |
+  | arbitration `hold` (a decision, ledgered when the logic is asked) | `cause` | `floor-occupied`, `no-open-bids`, `cooldown`, `chair-discretion` |
+  | `op-error` (a refused op; the text is protocol text, not the participant's) | `cause` | `unknown-op`, `not-holder`, `late-accept`, `one-bid-rule`, `no-shadow-analog` (stage 0b), `rank` |
+  | `would-have-offered` (stage 0b only) | — | an undelivered offer, ledgered; its withdrawal is `grant/declined cause=withdrawn-in-shadow` |
+
+  Rules: a ledger schema MUST reject any `cause`/`terminal` value outside
+  the set (a contract MAY narrow the set for its logic, never widen it
+  without a revision of this section); **free text never enters the
+  metadata ledger** — there is no free-text reason field, so there is
+  nothing to minimize. A chair or moderator who wants to *explain* a
+  revoke says so as room traffic through the ordinary channel adapter,
+  exactly as §2.2's contract-change notice does; the explanation is
+  content and lives where content lives. Implementation state at rev 10:
+  the trial book and logics carry prose in these fields today
+  (`'floor occupied'`, `'process restart — revalidation required'`, and
+  `chairRevoke` accepts an operator string into the receipt) — a
+  conformance item, listed in §12's rev-10 items, not a licence.
 
 ## 10. Exit gates
 
@@ -643,15 +753,67 @@ run in consented form via the 14-day historical-backscroll harvest
 (2026-08-19). **(0b) counterfactual shadow** — the arbiter maintains a
 real book against the live channel and ledgers what it *would* have
 granted, still sending nothing; this is where fairness order diffs
-against actual speaking order (instrument pending; the harvested-data
-fairness-diff replayer is its dry precursor). Its credible live form is
-**real shadow bids**: consenting agents' adapters place genuine bids
-into a book that grants nothing. The replayer's shakedown is why this
-matters — synthesized human bids proved calibration artifacts (the
+against actual speaking order. Its credible live form is **real shadow
+bids**: consenting agents' adapters place genuine bids into a book whose
+offers are never delivered. The replayer's shakedown is why this matters
+— synthesized human bids proved calibration artifacts (the fairness-diff
 δ-sweep swung the human intervention rate 14× on one free parameter,
-2026-08-25), so counterfactual claims about humans want gesture-derived
-bids or none at all. Nobody's behavior changes
-on either rung. Prerequisites, hard for both: a send-rate circuit
+2026-08-25; **δ** is the replayer's synthetic-bid lead time, the assumed
+interval between a human's intention and their message, which no data
+constrains), so counterfactual claims about humans want gesture-derived
+bids or none at all. Nobody's behavior changes on either rung.
+
+**0b lifecycle (normative, rev 10 — closing Mica's blocker 6; matches
+`feat/shadow-bids-instrument`, which becomes conformant to this text
+rather than the other way round):**
+- **Ingress.** Consenting participants' adapters send `bid/create`,
+  `bid/amend`, `bid/cancel` and acks from their ordinary intention
+  signal — the same act they would perform at stage 1. Grant-directed
+  ops (`accept`, `decline`, `continue`, `release`) are refused by name
+  (`no-shadow-analog`): no offer is ever delivered, so nothing exists to
+  accept. Non-consenting participants' ops are ledgered as
+  `op-unconsented` with args dropped and never enter the book.
+- **Zero-send** means zero outbound room or control messages from the
+  instrument on every transport it holds — not zero consenting bid
+  ingress, which is inbound and is the point.
+- **The book is real.** The live logic arbitrates on the room's real
+  head (advanced by room speech, §2.2), real bids, real clocks. Offers are
+  computed and ledgered (`would-have-offered`) and **not delivered**.
+- **Acceptance is the bidder's own room speech** while their offer is
+  live (`accept-on-speech`), routed through the service's ordinary
+  `accept` so accept-TTL and the one accounting owner (§2.3) apply
+  unchanged: speech after the offer's TTL is `post-expiry`, the C2
+  mismatch made visible, and the spent bid is cancelled
+  (`spent-out-of-band`).
+- **Lease and burst.** An accepted counterfactual grant holds under the
+  §6 rule exactly: holder speech extends the burst hold within the lease
+  ceiling; the arbiter releases after `burstReleaseMs` of holder silence
+  or the lease expires — agent leases only, and only holders can extend.
+- **Speech the floor would have refused.** Another participant's offer or
+  lease live: the speech is ledgered `blocked` against that holder; the
+  speaker's own open bid, if any, is cancelled `spent-out-of-band`; the
+  holder's grant is untouched (the voluntary-compliance analog: the
+  instrument records the disagreement, it does not adjudicate it). Speech
+  with an open bid and no live offer: `unoffered` (never offered) or
+  `post-expiry` (an offer already lapsed against it), by the bid's own
+  ignored-offer count; the bid is cancelled. Speech with no bid: `unbid`.
+- **What is not charged.** An undelivered offer that no speech takes is
+  withdrawn `withdrawn-in-shadow` with **no fairness charge and no
+  ignored-offer count**: nobody was ignored who could have answered.
+  `bid/lapsed` therefore cannot fire in 0b, and a participant's fairness
+  history is untouched by offers they never saw. Counterfactual
+  *acceptances* and *releases* do apply fairness bookkeeping — they are
+  real acts by the participant.
+- **Exactly once.** A bid is consumed by precisely one of: counterfactual
+  acceptance, cancellation by its owner, or `spent-out-of-band`; it is
+  never re-offered after its owner has spoken. Adapters change nothing
+  about when or whether their participant speaks; the bid is a
+  declaration beside the speech, not a gate in front of it.
+- **Evidence gate.** A 0b fairness report is admissible only when the run
+  carries a self-describing run manifest (the fairness-MR machinery's
+  `run-config` row: head, contract digest, knobs, consenting roster,
+  window) and the instrument passes the conformance scenarios for every
+  row above (`trial/`, rev-10 item), reproduced against a recorded feed. Prerequisites, hard for both: a send-rate circuit
 breaker capping the ROOM's aggregate output across every outbound
 transport, and a ledger content audit against §9's metadata-only
 promise — a measurement instrument pointed at a social space carries
@@ -663,7 +825,10 @@ live-channel run's disclosure and retention terms MUST cover identifier
 handling, not merely content absence. (1) **Compliant-agents-only** — real residents adopt floor
 discipline via their harness adapters (§6); humans untouched. This stage
 is gated on the first production floor adapter existing, and is where the
-wake-economics claim becomes demonstrable. (2) **Gesture-derived
+wake-economics claim becomes demonstrable. (The ladder orders *evidence
+and authority*, not implementation chronology: 0b's real shadow bids need
+a participant adapter too, so the adapter is built before stage 1 and
+first run in shadow.) (2) **Gesture-derived
 humans** — the §6 model, full product. In parallel: the voice gate's
 **synthetic-provider rig** (RFC-006 dev path) exercises
 one-wake/one-synthesis/barge-in-boundary as protocol behavior with zero
@@ -694,9 +859,9 @@ correction is part of the record:
 
 | # | Measured | Knob consequence |
 |---|---|---|
-| C1 | The social room is "quiet >60 s" 16.6×/day (all-pairs gap p50 45 s, p90 **23.5 min**; quiet stretch p50 5.1 min, p90 1.7 h); #general 5.8×/day (gap p50 66 s, p90 **2.4 h**; quiet p50 11.5 min). Rev 9 wrote "p90 ≈ 2 h" and "~20+ min" as one number; they are the two rooms | 60 s `idleAfterMs` is a bot-fleet tuning; the deterministic per-room mapping from these quantiles to a static contract value is rev 10's §3 item, and until it exists `floor/idle` stays lab-only |
+| C1 | The social room is "quiet >60 s" 16.6×/day (all-pairs gap p50 45 s, p90 **23.5 min**; quiet stretch p50 5.1 min, p90 1.7 h); #general 5.8×/day (gap p50 66 s, p90 **2.4 h**; quiet p50 11.5 min). Rev 9 wrote "p90 ≈ 2 h" and "~20+ min" as one number; they are the two rooms | 60 s `idleAfterMs` is a bot-fleet tuning. §3's mapping (gap p90, whole interval, pooled, rounded up to the minute) gives the social room **24 min** (3.8 idle/day) and #general **142 min** (1.1/day) — `trial/calibration/REPORT.md` §3; unmeasured rooms keep `floor/idle` lab-only |
 | C2 | Speaker-handoff gap over **all** author changes p50 60 s (social) / 98 s (#general); split by kind, human→human p50 1.6 min / 37 s, human→agent 39 s / 3.2 min, agent→human 3.0 min / 4.3 min (n = 34/45, 141/29, 140/30). Rev 9 called the all-kind figure "human" handoff latency; the human→human figure is the one that bears on a human accept window, and it is 2–5× a 15–20 s window rather than a single ratio | Confirms accept-TTL-per-`readinessKind` (§2.4) and the rule that human participation carries no accept step at all (§6) |
-| C3 | **Corrected.** As published: "median self-continue gap 1.3 s; a turn is a burst; release on burst-end." That figure pooled harness-paced agent sends with human messages. Split: agents p50 **0.4 s** (sharply bimodal — harness burst, then genuine new turns); humans p50 **52 s**, spread smoothly 10 s → hours, **no valley** — human self-gaps overlap the handoff distribution (handoff p25 = 32 s). A threshold sweep (1–60 s) fails at every setting for humans: 10 s fragments 86 % of human continuations, 60 s delays half of real handoffs ~30 s median | Burst-end release is an **agent-only** mechanism: atomic adapter op preferred, `burstReleaseMs` ≈ 2.5 s fallback (§6 emission coalescing). For humans the text-VAD signal is the typing indicator, never message spacing — hard confirmation of §6's native-gesture model |
+| C3 | **Corrected.** As published: "median self-continue gap 1.3 s; a turn is a burst; release on burst-end." That figure pooled harness-paced agent sends with human messages. Split: agents p50 **0.4 s** (sharply bimodal — harness burst, then genuine new turns); humans p50 **52 s**, spread smoothly 10 s → hours, **no valley** — human self-gaps overlap the handoff distribution (handoff p25 = 32 s). A threshold sweep (1–60 s) fails at every setting for humans: 10 s fragments 86 % of human continuations, 60 s delays half of real handoffs ~30 s median | Burst-end release is an **agent-only** mechanism: atomic adapter op preferred, `burstReleaseMs` ≈ 2.5 s fallback (§6 emission coalescing). For humans, message spacing is **disproved** as a turn-boundary signal by this measurement; which native gesture replaces it is **not shown here** — the record is timestamp/author/bytes and carries no typing-indicator events. The typing indicator is the candidate (§6), to be measured, not assumed |
 | C4 | Human turns are short: bytes p50 76 / p90 278 (social), 66 / 187 (#general). Agent turns are not: p50 1240 / p90 1862 (social), 564 / 1549 (#general). Rev 9's "p50 393 B, p90 1.7 KB" was the social room pooled across kinds | Prepared-bid sizing for human-derived bids is comfortable; the agent column is the one a size bound would have to fit, and §2.1 defines a digest/size field but no bound — rev 10 item |
 
 Carried caveats: history under-represents deleted/edited messages (this
@@ -716,3 +881,25 @@ accounting owner** for terminal bookkeeping (§2.3, Mica's delta-review
 blocker), and **truthful time** (§2.6, the host-sleep ruling). Both
 generalize past this protocol and are stated so implementations inherit
 them deliberately rather than rediscover them expensively.
+
+**Rev 10 implementation items** — where this text is now ahead of the
+code, named so the gap is a list and not a surprise:
+1. §9: reason/cause fields become codes from the closed set; the ledger
+   schema rejects anything else; `chairRevoke` stops carrying an operator
+   string (the explanation is room traffic). Today's prose values in
+   `src/logics.ts` and `src/book.ts` are the migration list.
+2. §3: `idleAfterMs` provenance recorded in the contract (manifest digest
+   of the calibration that produced it); the lab default stays 60 s and is
+   labelled as such.
+3. §6: the burst-hold state `{grantId, generation, lastSpeechAt}` on the
+   arbiter, the lease ceiling, and the nine conformance vectors as named
+   tests in `trial/`.
+4. §12 0b: `feat/shadow-bids-instrument` conformed to the lifecycle above
+   (withdrawn offers charge nothing; `spent-out-of-band` as the cancel
+   cause; `no-shadow-analog` as the refusal code), with conformance
+   scenarios replayable against a recorded feed and a `run-config` row on
+   every run.
+5. §2.1: a contract-level bound on `size` where a logic wants one.
+6. §6 human gesture: a stage-0a run that records typing-indicator events,
+   so the candidate can be measured before §6 relies on it.
+

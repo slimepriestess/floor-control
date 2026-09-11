@@ -1005,5 +1005,21 @@
     "median_imposed_delay_ms": 29238
    }
   ]
+ },
+ "idleAfterMs": {
+  "social": {
+   "gapP90Ms": 1407323,
+   "idleAfterMs": 1440000,
+   "idleAfterMin": 24,
+   "idleFiringsPerDay": 3.83,
+   "labDefault60sFiringsPerDay": 16.6
+  },
+  "general": {
+   "gapP90Ms": 8480357,
+   "idleAfterMs": 8520000,
+   "idleAfterMin": 142,
+   "idleFiringsPerDay": 1.09,
+   "labDefault60sFiringsPerDay": 5.8
+  }
  }
 }

@@ -1,0 +1,1009 @@
+{
+ "rooms": [
+  {
+   "room": "social",
+   "n": 542,
+   "spanDays": 13.83,
+   "perDay": 39.2,
+   "messages": {
+    "human": 244,
+    "agent": 298
+   },
+   "distinctAuthors": {
+    "human": 5,
+    "agent": 9,
+    "all": 14
+   },
+   "gapMs_all": {
+    "p10": 397,
+    "p25": 15281,
+    "p50": 45273,
+    "p75": 215715,
+    "p90": 1407323,
+    "p95": 4557194,
+    "p99": 70959414,
+    "n": 541
+   },
+   "selfContinueGapMs": {
+    "human": {
+     "p10": 8515,
+     "p25": 16869,
+     "p50": 98831,
+     "p75": 470137,
+     "p90": 1239670,
+     "p95": 2876923,
+     "p99": 48005759,
+     "n": 69
+    },
+    "agent": {
+     "p10": 248,
+     "p25": 307,
+     "p50": 405,
+     "p75": 638,
+     "p90": 47461,
+     "p95": 74435,
+     "p99": 3671430,
+     "n": 114
+    }
+   },
+   "selfContinuationRate": 0.338,
+   "handoffGapMs": {
+    "all": {
+     "p10": 18645,
+     "p25": 33815,
+     "p50": 60120,
+     "p75": 295745,
+     "p90": 2277166,
+     "p95": 8235018,
+     "p99": 88001115,
+     "n": 358
+    },
+    "agent\u2192agent": {
+     "p10": 16818,
+     "p25": 34279,
+     "p50": 47868,
+     "p75": 1598626,
+     "p90": 4630012,
+     "p95": 33361507,
+     "p99": 94765056,
+     "n": 43
+    },
+    "agent\u2192human": {
+     "p10": 34991,
+     "p25": 69464,
+     "p50": 181165,
+     "p75": 606399,
+     "p90": 2952637,
+     "p95": 8436856,
+     "p99": 152476162,
+     "n": 140
+    },
+    "human\u2192agent": {
+     "p10": 16130,
+     "p25": 26903,
+     "p50": 39085,
+     "p75": 56963,
+     "p90": 125558,
+     "p95": 569862,
+     "p99": 47128508,
+     "n": 141
+    },
+    "human\u2192human": {
+     "p10": 22034,
+     "p25": 33815,
+     "p50": 94542,
+     "p75": 728743,
+     "p90": 5315523,
+     "p95": 9537554,
+     "p99": 24400981,
+     "n": 34
+    }
+   },
+   "quiet": {
+    "thresholdMs": 60000,
+    "episodes": 229,
+    "perDay": 16.6,
+    "durationMs": {
+     "p10": 74435,
+     "p25": 116343,
+     "p50": 308663,
+     "p75": 1239670,
+     "p90": 5991558,
+     "p95": 26425644,
+     "p99": 106009696,
+     "n": 229
+    }
+   },
+   "bytes": {
+    "all": {
+     "p10": 27,
+     "p25": 77,
+     "p50": 390,
+     "p75": 1363,
+     "p90": 1754,
+     "p95": 1869,
+     "p99": 1905,
+     "n": 542
+    },
+    "human": {
+     "p10": 14,
+     "p25": 32,
+     "p50": 76,
+     "p75": 153,
+     "p90": 278,
+     "p95": 336,
+     "p99": 586,
+     "n": 244
+    },
+    "agent": {
+     "p10": 335,
+     "p25": 628,
+     "p50": 1240,
+     "p75": 1656,
+     "p90": 1862,
+     "p95": 1886,
+     "p99": 1910,
+     "n": 298
+    }
+   },
+   "humanSelfGapHistogram": {
+    "0-2s": 1,
+    "2-5s": 4,
+    "5-10s": 4,
+    "10-30s": 15,
+    "30-60s": 6,
+    "60-300s": 16,
+    "300-1800s": 17,
+    ">1800s": 6
+   },
+   "sweep": [
+    {
+     "T_ms": 1000,
+     "frag_human": {
+      "n": 69,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 24,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 0,
+      "of": 358
+     },
+     "median_imposed_delay_ms": null
+    },
+    {
+     "T_ms": 2000,
+     "frag_human": {
+      "n": 68,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 22,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 1,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 298
+    },
+    {
+     "T_ms": 2500,
+     "frag_human": {
+      "n": 68,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 22,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 1,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 798
+    },
+    {
+     "T_ms": 3000,
+     "frag_human": {
+      "n": 68,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 21,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 1,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 1298
+    },
+    {
+     "T_ms": 5000,
+     "frag_human": {
+      "n": 64,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 20,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 3,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 1508
+    },
+    {
+     "T_ms": 8000,
+     "frag_human": {
+      "n": 62,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 20,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 8,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 1378
+    },
+    {
+     "T_ms": 10000,
+     "frag_human": {
+      "n": 60,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 20,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 13,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 3055
+    },
+    {
+     "T_ms": 15000,
+     "frag_human": {
+      "n": 53,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 18,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 22,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 5728
+    },
+    {
+     "T_ms": 20000,
+     "frag_human": {
+      "n": 51,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 17,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 41,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 5453
+    },
+    {
+     "T_ms": 30000,
+     "frag_human": {
+      "n": 45,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 14,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 74,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 11092
+    },
+    {
+     "T_ms": 60000,
+     "frag_human": {
+      "n": 39,
+      "of": 69
+     },
+     "frag_agent": {
+      "n": 10,
+      "of": 114
+     },
+     "handoffs_under_T": {
+      "n": 178,
+      "of": 358
+     },
+     "median_imposed_delay_ms": 26185
+    }
+   ]
+  },
+  {
+   "room": "general",
+   "n": 152,
+   "spanDays": 13.79,
+   "perDay": 11.0,
+   "messages": {
+    "human": 107,
+    "agent": 45
+   },
+   "distinctAuthors": {
+    "human": 5,
+    "agent": 7,
+    "all": 12
+   },
+   "gapMs_all": {
+    "p10": 8802,
+    "p25": 21083,
+    "p50": 66061,
+    "p75": 709214,
+    "p90": 8480357,
+    "p95": 51573351,
+    "p99": 89656916,
+    "n": 151
+   },
+   "selfContinueGapMs": {
+    "human": {
+     "p10": 8802,
+     "p25": 17473,
+     "p50": 34748,
+     "p75": 58013,
+     "p90": 271581,
+     "p95": 3681307,
+     "p99": 89656916,
+     "n": 32
+    },
+    "agent": {
+     "p10": 766051,
+     "p25": 1058866,
+     "p50": 2230324,
+     "p75": 2825581,
+     "p90": 4162719,
+     "p95": 4715703,
+     "p99": 4715703,
+     "n": 7
+    }
+   },
+   "selfContinuationRate": 0.258,
+   "handoffGapMs": {
+    "all": {
+     "p10": 9255,
+     "p25": 26729,
+     "p50": 97584,
+     "p75": 892533,
+     "p90": 12365217,
+     "p95": 51573351,
+     "p99": 186964774,
+     "n": 112
+    },
+    "agent\u2192agent": {
+     "p10": 22463,
+     "p25": 139901,
+     "p50": 892533,
+     "p75": 1369338,
+     "p90": 2849461,
+     "p95": 12365217,
+     "p99": 12365217,
+     "n": 8
+    },
+    "agent\u2192human": {
+     "p10": 31556,
+     "p25": 66061,
+     "p50": 258829,
+     "p75": 10220743,
+     "p90": 67590443,
+     "p95": 82918973,
+     "p99": 186964774,
+     "n": 30
+    },
+    "human\u2192agent": {
+     "p10": 9524,
+     "p25": 27039,
+     "p50": 193110,
+     "p75": 1147403,
+     "p90": 5039667,
+     "p95": 8480357,
+     "p99": 88553172,
+     "n": 29
+    },
+    "human\u2192human": {
+     "p10": 4956,
+     "p25": 16509,
+     "p50": 37009,
+     "p75": 123444,
+     "p90": 2244785,
+     "p95": 13818611,
+     "p99": 249949962,
+     "n": 45
+    }
+   },
+   "quiet": {
+    "thresholdMs": 60000,
+    "episodes": 80,
+    "perDay": 5.8,
+    "durationMs": {
+     "p10": 80316,
+     "p25": 195523,
+     "p50": 691488,
+     "p75": 3728932,
+     "p90": 51573351,
+     "p95": 82918973,
+     "p99": 186964774,
+     "n": 80
+    }
+   },
+   "bytes": {
+    "all": {
+     "p10": 8,
+     "p25": 37,
+     "p50": 98,
+     "p75": 351,
+     "p90": 795,
+     "p95": 1288,
+     "p99": 1685,
+     "n": 152
+    },
+    "human": {
+     "p10": 8,
+     "p25": 28,
+     "p50": 66,
+     "p75": 114,
+     "p90": 187,
+     "p95": 261,
+     "p99": 561,
+     "n": 107
+    },
+    "agent": {
+     "p10": 95,
+     "p25": 383,
+     "p50": 564,
+     "p75": 995,
+     "p90": 1549,
+     "p95": 1685,
+     "p99": 1919,
+     "n": 45
+    }
+   },
+   "humanSelfGapHistogram": {
+    "0-2s": 0,
+    "2-5s": 2,
+    "5-10s": 3,
+    "10-30s": 9,
+    "30-60s": 10,
+    "60-300s": 5,
+    "300-1800s": 0,
+    ">1800s": 3
+   },
+   "sweep": [
+    {
+     "T_ms": 1000,
+     "frag_human": {
+      "n": 32,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 0,
+      "of": 112
+     },
+     "median_imposed_delay_ms": null
+    },
+    {
+     "T_ms": 2000,
+     "frag_human": {
+      "n": 32,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 2,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 204
+    },
+    {
+     "T_ms": 2500,
+     "frag_human": {
+      "n": 32,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 3,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 704
+    },
+    {
+     "T_ms": 3000,
+     "frag_human": {
+      "n": 32,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 3,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 1204
+    },
+    {
+     "T_ms": 5000,
+     "frag_human": {
+      "n": 30,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 6,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 79
+    },
+    {
+     "T_ms": 8000,
+     "frag_human": {
+      "n": 29,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 10,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 3044
+    },
+    {
+     "T_ms": 10000,
+     "frag_human": {
+      "n": 27,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 13,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 4003
+    },
+    {
+     "T_ms": 15000,
+     "frag_human": {
+      "n": 26,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 16,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 8965
+    },
+    {
+     "T_ms": 20000,
+     "frag_human": {
+      "n": 22,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 25,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 10476
+    },
+    {
+     "T_ms": 30000,
+     "frag_human": {
+      "n": 18,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 31,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 15067
+    },
+    {
+     "T_ms": 60000,
+     "frag_human": {
+      "n": 8,
+      "of": 32
+     },
+     "frag_agent": {
+      "n": 6,
+      "of": 7
+     },
+     "handoffs_under_T": {
+      "n": 46,
+      "of": 112
+     },
+     "median_imposed_delay_ms": 40364
+    }
+   ]
+  }
+ ],
+ "pooled": {
+  "room": "pooled (pairs formed within each room)",
+  "n": 694,
+  "spanDays": 13.83,
+  "perDay": 50.2,
+  "messages": {
+   "human": 351,
+   "agent": 343
+  },
+  "distinctAuthors": {
+   "human": 7,
+   "agent": 12,
+   "all": 19
+  },
+  "gapMs_all": {
+   "p10": 478,
+   "p25": 16869,
+   "p50": 49451,
+   "p75": 258829,
+   "p90": 2394514,
+   "p95": 8480357,
+   "p99": 88553172,
+   "n": 692
+  },
+  "selfContinueGapMs": {
+   "human": {
+    "p10": 8515,
+    "p25": 17051,
+    "p50": 51737,
+    "p75": 308663,
+    "p90": 1239670,
+    "p95": 3681307,
+    "p99": 73397897,
+    "n": 101
+   },
+   "agent": {
+    "p10": 249,
+    "p25": 314,
+    "p50": 424,
+    "p75": 744,
+    "p90": 74435,
+    "p95": 2230324,
+    "p99": 4715703,
+    "n": 121
+   }
+  },
+  "selfContinuationRate": 0.321,
+  "handoffGapMs": {
+   "all": {
+    "p10": 16509,
+    "p25": 32079,
+    "p50": 66596,
+    "p75": 395182,
+    "p90": 2952637,
+    "p95": 13818611,
+    "p99": 94765056,
+    "n": 470
+   },
+   "agent\u2192agent": {
+    "p10": 16818,
+    "p25": 34279,
+    "p50": 59800,
+    "p75": 1598626,
+    "p90": 4630012,
+    "p95": 33361507,
+    "p99": 94765056,
+    "n": 51
+   },
+   "agent\u2192human": {
+    "p10": 31556,
+    "p25": 67129,
+    "p50": 196469,
+    "p75": 727578,
+    "p90": 5991558,
+    "p95": 44485224,
+    "p99": 152476162,
+    "n": 170
+   },
+   "human\u2192agent": {
+    "p10": 15597,
+    "p25": 26903,
+    "p50": 40179,
+    "p75": 71895,
+    "p90": 412340,
+    "p95": 3728932,
+    "p99": 47128508,
+    "n": 170
+   },
+   "human\u2192human": {
+    "p10": 7868,
+    "p25": 23861,
+    "p50": 53165,
+    "p75": 392409,
+    "p90": 2970560,
+    "p95": 12486678,
+    "p99": 51573351,
+    "n": 79
+   }
+  },
+  "quiet": {
+   "thresholdMs": 60000,
+   "episodes": 309,
+   "perDay": 22.3,
+   "durationMs": {
+    "p10": 76004,
+    "p25": 119676,
+    "p50": 383217,
+    "p75": 2123974,
+    "p90": 11605319,
+    "p95": 48005759,
+    "p99": 152476162,
+    "n": 309
+   }
+  },
+  "bytes": {
+   "all": {
+    "p10": 25,
+    "p25": 64,
+    "p50": 259,
+    "p75": 1102,
+    "p90": 1676,
+    "p95": 1849,
+    "p99": 1902,
+    "n": 694
+   },
+   "human": {
+    "p10": 12,
+    "p25": 31,
+    "p50": 73,
+    "p75": 135,
+    "p90": 253,
+    "p95": 317,
+    "p99": 561,
+    "n": 351
+   },
+   "agent": {
+    "p10": 290,
+    "p25": 563,
+    "p50": 1134,
+    "p75": 1631,
+    "p90": 1853,
+    "p95": 1884,
+    "p99": 1913,
+    "n": 343
+   }
+  },
+  "humanSelfGapHistogram": {
+   "0-2s": 1,
+   "2-5s": 6,
+   "5-10s": 7,
+   "10-30s": 24,
+   "30-60s": 16,
+   "60-300s": 21,
+   "300-1800s": 17,
+   ">1800s": 9
+  },
+  "sweep": [
+   {
+    "T_ms": 1000,
+    "frag_human": {
+     "n": 101,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 30,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 0,
+     "of": 470
+    },
+    "median_imposed_delay_ms": null
+   },
+   {
+    "T_ms": 2000,
+    "frag_human": {
+     "n": 100,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 28,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 3,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 298
+   },
+   {
+    "T_ms": 2500,
+    "frag_human": {
+     "n": 100,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 28,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 4,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 798
+   },
+   {
+    "T_ms": 3000,
+    "frag_human": {
+     "n": 100,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 27,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 4,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 1298
+   },
+   {
+    "T_ms": 5000,
+    "frag_human": {
+     "n": 94,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 26,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 9,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 1508
+   },
+   {
+    "T_ms": 8000,
+    "frag_human": {
+     "n": 91,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 26,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 18,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 2003
+   },
+   {
+    "T_ms": 10000,
+    "frag_human": {
+     "n": 87,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 26,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 26,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 3162
+   },
+   {
+    "T_ms": 15000,
+    "frag_human": {
+     "n": 79,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 24,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 38,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 6559
+   },
+   {
+    "T_ms": 20000,
+    "frag_human": {
+     "n": 73,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 23,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 66,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 6910
+   },
+   {
+    "T_ms": 30000,
+    "frag_human": {
+     "n": 63,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 20,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 105,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 12973
+   },
+   {
+    "T_ms": 60000,
+    "frag_human": {
+     "n": 47,
+     "of": 101
+    },
+    "frag_agent": {
+     "n": 16,
+     "of": 121
+    },
+    "handoffs_under_T": {
+     "n": 224,
+     "of": 470
+    },
+    "median_imposed_delay_ms": 29238
+   }
+  ]
+ }
+}

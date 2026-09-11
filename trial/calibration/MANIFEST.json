@@ -1,0 +1,196 @@
+{
+ "artifact": "FLOOR-RFC-001 stage-0a calibration receipt (rev 10, addresses review blocker 1 of 2026-09-11)",
+ "generatedBy": {
+  "script": "trial/calibration/calibrate.py",
+  "sha256": "9af9d9ca80cd1370a94cf016660cb4b3520360798a6f93ac5c4cdb6bfc5fc745",
+  "python": "3.x stdlib only, deterministic; run from this directory"
+ },
+ "inputs": {
+  "records": {
+   "social": {
+    "path": "trial/calibration/records/social.jsonl",
+    "sha256": "6b94290408fe0d494486a136d8b81542f7e39fc34c2f63c9cd31220fe2126207",
+    "rows": 542
+   },
+   "general": {
+    "path": "trial/calibration/records/general.jsonl",
+    "sha256": "fc050c8b111b6678055a5a3dc9c141a757c953b24e2672b7efbeb393b9cb48df",
+    "rows": 152
+   }
+  },
+  "rawHarvest": {
+   "note": "The raw harvest (timestamp, author id, message id, bytes, thread flag; NO text field) is NOT committed: author and message ids are stable, rehydratable references. It stays local to the analyst's machine per the disclosure. The committed records are derived from it by pseudonymize.py with an HMAC key held outside the repository.",
+   "files": {
+    "social": {
+     "sha256": "4b4eec281a859967354bed30ac5f2901d17d61b7557bac9e78e241802b15a639",
+     "rows": 542
+    },
+    "general": {
+     "sha256": "7ae12f05b80c4022d61b82ff86917561660057815a9269b9f4883d201e060d8b",
+     "rows": 152
+    }
+   },
+   "extraction": "portal-mcpl fetch_history backscroll paging, 2026-08-19, content discarded at ingestion (record shape = the audited live observer's speech-rhythm row, trial/LEDGER-CONTENT-AUDIT.md). The one-off extraction script was not retained; the raw files above are its complete output and are digested here."
+  },
+  "pseudonymization": {
+   "script": "trial/calibration/pseudonymize.py",
+   "method": "author -> <kind-initial>-HMAC_SHA256(key, authorId)[:12]; message ids dropped; key = CALIBRATION_HMAC_KEY, not in the repository",
+   "exclusionsApplied": []
+  }
+ },
+ "sources": {
+  "social": {
+   "binding": "Connectome #worlds",
+   "channelId": "1529711496609927279",
+   "interval": {
+    "from": "2026-08-06T02:24:48.107Z",
+    "to": "2026-08-19T22:21:30.470Z",
+    "spanDays": 13.83
+   }
+  },
+  "general": {
+   "binding": "Connectome #general",
+   "channelId": "1526641225124544753",
+   "interval": {
+    "from": "2026-08-06T03:30:43.257Z",
+    "to": "2026-08-19T22:23:54.066Z",
+    "spanDays": 13.79
+   }
+  },
+  "server": "one Discord server; both rooms fronted by the same portal relay",
+  "threads": "excluded (inThread rows dropped before pairing; the harvest recorded 0 thread rows)",
+  "survivorship": "backscroll as of 2026-08-19; deleted/edited messages are absent \u2014 this is the rhythm of what remains"
+ },
+ "participantKind": {
+  "rule": "raw author id prefix: user:* = human; webhook:* and persona:* = agent (residents post through the relay's webhook/persona identities)",
+  "verification": "member registry check 2026-08-25: every user: row in the corpus is a human account (the one uncertain id, 27 msgs in the social room, resolved bot:false)"
+ },
+ "denominators": {
+  "social": {
+   "messages": {
+    "human": 244,
+    "agent": 298
+   },
+   "distinctAuthors": {
+    "human": 5,
+    "agent": 9,
+    "all": 14
+   },
+   "pairs": 541,
+   "selfContinuations": {
+    "human": 69,
+    "agent": 114
+   },
+   "handoffs": {
+    "all": 358,
+    "agent\u2192agent": 43,
+    "agent\u2192human": 140,
+    "human\u2192agent": 141,
+    "human\u2192human": 34
+   }
+  },
+  "general": {
+   "messages": {
+    "human": 107,
+    "agent": 45
+   },
+   "distinctAuthors": {
+    "human": 5,
+    "agent": 7,
+    "all": 12
+   },
+   "pairs": 151,
+   "selfContinuations": {
+    "human": 32,
+    "agent": 7
+   },
+   "handoffs": {
+    "all": 112,
+    "agent\u2192agent": 8,
+    "agent\u2192human": 30,
+    "human\u2192agent": 29,
+    "human\u2192human": 45
+   }
+  },
+  "pooled": {
+   "messages": {
+    "human": 351,
+    "agent": 343
+   },
+   "distinctAuthors": {
+    "human": 7,
+    "agent": 12,
+    "all": 19
+   },
+   "note": "pooled pairs are formed within each room and then concatenated; distinct authors are counted across rooms (some agents post in both), which is why the pooled author count is less than the per-room sum \u2014 the RFC's earlier '26 speakers' was that sum"
+  }
+ },
+ "thresholdSweep": {
+  "T_ms": [
+   1000,
+   2000,
+   2500,
+   3000,
+   5000,
+   8000,
+   10000,
+   15000,
+   20000,
+   30000,
+   60000
+  ],
+  "fragmentation": "share of a kind's self-continuation gaps > T",
+  "holdTax": "count of handoff gaps < T, and the median of (T - gap) over them"
+ },
+ "quantile": "nearest-rank: sorted[round(p/100*(n-1))]",
+ "outputs": {
+  "report.json": {
+   "sha256": "adbce7a5227345dbbb3e9a7f852bb97c85ba3e8295499609623291befe46f4b0"
+  },
+  "REPORT.md": "readable subset of report.json"
+ },
+ "disclosureAndAuthorization": {
+  "status": "DISCLOSED, OPT-OUT (standing exclusion offer). Not opt-in consent: participants were told, offered exclusion, and none has asked; the corpus is authorized by the room's operator and disclosed to its regulars, which is a weaker claim than 'consented' and is the claim this receipt makes.",
+  "messages": [
+   {
+    "role": "ask (listen-only observer proposal, content-free record shape, deletable ledger)",
+    "channel": "Connectome #general",
+    "id": "rm_1526641225124544753_1539718034846130298",
+    "at": "2026-08-19T19:29:46Z",
+    "author": "Weft"
+   },
+   {
+    "role": "operator authorization \u2014 historical backscroll offered in lieu of a live run",
+    "channel": "Connectome #general",
+    "id": "rm_1526641225124544753_1539760903749246987",
+    "at": "2026-08-19T22:20:06Z",
+    "author": "antra"
+   },
+   {
+    "role": "plan with exact edges (rooms, record shape, discard-at-ingestion, exclusion offer, survivorship caveat)",
+    "channel": "Connectome #general",
+    "id": "rm_1526641225124544753_1539761155940286515",
+    "at": "2026-08-19T22:21:06Z",
+    "author": "Weft"
+   },
+   {
+    "role": "disclosure in the analyzed social room, with the standing exclusion offer",
+    "channel": "Connectome #worlds",
+    "id": "rm_1529711496609927279_1539761254569082900",
+    "at": "2026-08-19T22:21:30Z",
+    "author": "Weft"
+   },
+   {
+    "role": "results, aggregate only; exclusion offer restated",
+    "channel": "Connectome #general",
+    "id": "rm_1526641225124544753_1539762575267598386",
+    "at": "2026-08-19T22:26:45Z",
+    "author": "Weft"
+   }
+  ],
+  "generalRoomDisclosure": "the ask/plan/results thread above IS the #general disclosure; no separate note was posted there",
+  "retention": "raw harvest local to the analyst's machine, deletable on request; committed artifacts are pseudonymized records and aggregates",
+  "exclusionProcedure": "a participant (person or resident) asks in-channel or by DM; re-run pseudonymize.py with --exclude <authorId> for each affected room, re-run calibrate.py, commit the new records/report/manifest. Both record and report digests change, so the previously published aggregate is invalidated by construction rather than silently kept; the RFC cites this manifest by digest.",
+  "knownInclusion": "the analyst's own persona rows are inside the corpus (persona:weft-9f6560: 17 rows in general, and the social room's final row is the disclosure note itself). Left in as harvested; they are agent-kind rows and do not touch the human columns."
+ }
+}

@@ -673,25 +673,37 @@ transfer to rooms where people live.
 
 **Stage-0a calibration — what real rooms taught the knobs** (backscroll
 harvest 2026-08-19, offered by antra in lieu of a live listening run —
-rung 0a exercised on consented historical data:
-14 days × 2 channels, 694 messages, 26 speakers; records are
+rung 0a exercised on **disclosed, opt-out** historical data: the operator
+authorized the backscroll, the analyzed rooms were told with a standing
+exclusion offer, and nobody has asked to be excluded. That is a weaker
+claim than "consented" and it is the claim made here; every included
+participant did not affirmatively opt in. Two rooms on one server,
+13.8 days, 694 messages — social room 542 (5 human authors, 9 agent),
+#general 152 (5 human, 7 agent), 19 distinct authors across both (an
+earlier "26 speakers" summed the per-room counts). Records are
 timestamp/author/bytes only — no text field exists to store, per the §9
-audit discipline; disclosure posted in the analyzed channel with a
-standing exclusion offer). Four calibration findings, one of which was
-**corrected** after first publication (2026-08-25) — the correction is
-part of the record:
+audit discipline. **The receipt is `trial/calibration/`**: pseudonymized
+records, the deterministic script whose header is the method, the report
+every number below is read from, and `MANIFEST.json` with input digests,
+interval, denominators, the disclosure/authorization message references,
+retention, and the exclusion procedure (a later exclusion re-runs the
+pipeline and changes the digests, so a published aggregate cannot
+silently outlive the corpus it came from). Four calibration findings, one
+of which was **corrected** after first publication (2026-08-25) — the
+correction is part of the record:
 
 | # | Measured | Knob consequence |
 |---|---|---|
-| C1 | An inhabited room is "quiet >60 s" ~17×/day (median natural gap 45 s; median quiet stretch 5 min; p90 ≈ 2 h) | 60 s `idleAfterMs` is a bot-fleet tuning; inhabited rooms derive idle-after from observed rhythm (p90 gap, ~20+ min) or keep `floor/idle` lab-only (§3) |
-| C2 | Human speaker-handoff latency p50 60–98 s across the two rooms — 3–4× any 15–20 s accept window | Confirms accept-TTL-per-`readinessKind` (§2.4) and the rule that human participation carries no accept step at all (§6) |
+| C1 | The social room is "quiet >60 s" 16.6×/day (all-pairs gap p50 45 s, p90 **23.5 min**; quiet stretch p50 5.1 min, p90 1.7 h); #general 5.8×/day (gap p50 66 s, p90 **2.4 h**; quiet p50 11.5 min). Rev 9 wrote "p90 ≈ 2 h" and "~20+ min" as one number; they are the two rooms | 60 s `idleAfterMs` is a bot-fleet tuning; the deterministic per-room mapping from these quantiles to a static contract value is rev 10's §3 item, and until it exists `floor/idle` stays lab-only |
+| C2 | Speaker-handoff gap over **all** author changes p50 60 s (social) / 98 s (#general); split by kind, human→human p50 1.6 min / 37 s, human→agent 39 s / 3.2 min, agent→human 3.0 min / 4.3 min (n = 34/45, 141/29, 140/30). Rev 9 called the all-kind figure "human" handoff latency; the human→human figure is the one that bears on a human accept window, and it is 2–5× a 15–20 s window rather than a single ratio | Confirms accept-TTL-per-`readinessKind` (§2.4) and the rule that human participation carries no accept step at all (§6) |
 | C3 | **Corrected.** As published: "median self-continue gap 1.3 s; a turn is a burst; release on burst-end." That figure pooled harness-paced agent sends with human messages. Split: agents p50 **0.4 s** (sharply bimodal — harness burst, then genuine new turns); humans p50 **52 s**, spread smoothly 10 s → hours, **no valley** — human self-gaps overlap the handoff distribution (handoff p25 = 32 s). A threshold sweep (1–60 s) fails at every setting for humans: 10 s fragments 86 % of human continuations, 60 s delays half of real handoffs ~30 s median | Burst-end release is an **agent-only** mechanism: atomic adapter op preferred, `burstReleaseMs` ≈ 2.5 s fallback (§6 emission coalescing). For humans the text-VAD signal is the typing indicator, never message spacing — hard confirmation of §6's native-gesture model |
-| C4 | Turns are short: p50 393 B, p90 1.7 KB | Prepared-bid sizing realistic as designed (§2.1) |
+| C4 | Human turns are short: bytes p50 76 / p90 278 (social), 66 / 187 (#general). Agent turns are not: p50 1240 / p90 1862 (social), 564 / 1549 (#general). Rev 9's "p50 393 B, p90 1.7 KB" was the social room pooled across kinds | Prepared-bid sizing for human-derived bids is comfortable; the agent column is the one a size bound would have to fit, and §2.1 defines a digest/size field but no bound — rev 10 item |
 
 Carried caveats: history under-represents deleted/edited messages (this
 is the rhythm of what remains); threads excluded; single server;
-n = 101 human self-continuation pairs behind C3's human column. Author
-classification was verified against the member registry (2026-08-25):
+n = 101 human self-continuation pairs behind C3's human column (69 social,
+32 #general; the 52 s p50 is the pooled figure, per-room 1.6 min / 35 s).
+Author classification was verified against the member registry (2026-08-25):
 every `user:` row in the corpus is a human account; residents post via
 webhook/persona identities. The C3 correction is also a method note the
 next measurement inherits: **rhythm statistics over mixed human+agent

@@ -7,7 +7,7 @@
  },
  "inputs": {
   "records": {
-   "status": "NOT COMMITTED. Held locally by the authorized analyst (Ra's machine) per the disclosure; deletable on request. The first rev-10 pass (d9f6ffc, 2026-09-11 ~18:30\u201320:00Z) published pseudonymized event-level rows on the unmerged PR branch of the fork; the branch history was rewritten to remove them the same day after review (Mica, blocker 1). Clones or caches taken in that window may still hold that commit; nothing can be done about copies already taken except to say so here.",
+   "status": "NOT COMMITTED. Held locally by the authorized analyst (Ra's machine) per the disclosure; deletable on request. INCIDENT: the first rev-10 pass (2026-09-11, ~18:30-20:00Z) published pseudonymized event-level rows on the unmerged PR branch of the public fork; the branch history was rewritten to remove them the same day after review (Mica, blocker 1). See hostSideAvailability for what a rewrite does and does not remove.",
    "why": "event-level rows with exact timestamps are re-identifiable even under keyed pseudonyms (a public message's timestamp names its author's pseudonym), and the disclosure promised aggregates only.",
    "digests": {
     "social": {
@@ -19,7 +19,13 @@
      "rows": 152
     }
    },
-   "digestPurpose": "the analyst's audit trail: a re-run over the same local records reproduces report.json byte-for-byte (its digest below); the digests themselves reveal nothing."
+   "digestPurpose": "the analyst's audit trail: a re-run over the same local records reproduces report.json byte-for-byte (its digest below); the digests themselves reveal nothing.",
+   "hostSideAvailability": {
+    "finding": "A history rewrite removes the commits from every ref, but the repository host keeps unreachable objects until it garbage-collects, and serves them by identifier: on 2026-09-14 the rows were still retrievable unauthenticated from both the fork and the upstream repository (which shares the fork's object store), and an earlier version of this manifest carried the identifier that made that a one-step lookup (Mica, rev-10 round-2 review). The identifier is not reproduced here or anywhere in the current tree.",
+    "repair": "(1) this manifest no longer carries a locator; (2) a sensitive-data removal request to the host's support, naming both repositories, was prepared 2026-09-14 for the fork owner to file (and the upstream owner to file or co-sign), asking for dereferencing of the affected pull-request views, a server-side garbage collection, and removal of cached views; (3) after the host confirms, unauthenticated retrieval of the rows by identifier is re-checked from outside and the result recorded below. The check and its receipt stay operator-private: reproducing the identifier would re-amplify it.",
+    "status": "2026-09-14: request prepared, not yet filed. Rows retrievable by identifier from the host as of this commit. This field is updated when that changes.",
+    "irreducible": "Clones, forks, and caches taken between publication and removal are outside anyone's reach; copies that were made cannot be recalled, and nothing here claims otherwise."
+   }
   },
   "rawHarvest": {
    "note": "The raw harvest (timestamp, author id, message id, bytes, thread flag; NO text field) is NOT committed: author and message ids are stable, rehydratable references. It stays local to the analyst's machine per the disclosure. The committed records are derived from it by pseudonymize.py with an HMAC key held outside the repository.",
@@ -199,7 +205,7 @@
    }
   ],
   "generalRoomDisclosure": "the ask/plan/results thread above IS the #general disclosure; no separate note was posted there",
-  "retention": "raw harvest local to the analyst's machine, deletable on request; committed artifacts are pseudonymized records and aggregates",
+  "retention": "raw harvest and the pseudonymized records both stay local to the analyst's machine, deletable on request; committed artifacts are aggregates (report.json, REPORT.md), this manifest, and the synthetic fixture only",
   "exclusionProcedure": "a participant (person or resident) asks in-channel or by DM; the analyst re-runs pseudonymize.py --exclude <authorId> per affected room and calibrate.py over the local records, and commits the new report + manifest (digests change, so the published aggregate is invalidated by construction). Honest limit: aggregates already published in earlier commits of this branch, and any copy of the briefly published rows (see inputs.records.status), cannot be recalled.",
   "knownInclusion": "the analyst's own persona rows are inside the corpus (agent-kind; they do not touch the human columns). Left in as harvested."
  },

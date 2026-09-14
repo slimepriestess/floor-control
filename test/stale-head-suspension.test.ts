@@ -152,7 +152,7 @@ describe('§2.2 stale-head suspension', () => {
     const r = room(svc);
     bid(r.book, 'chooser', 'b1', T0 + 1);
     const g1 = svc.arbitrate(r.roomId, T0 + 2).grant!;
-    svc.decline(r.roomId, g1.grantId, T0 + 3, 'content-withdrawn');
+    svc.decline(r.roomId, g1.grantId, T0 + 3, 'participant');
     const b = r.book.listBids().find((x) => x.bidId === 'b1')!;
     assert.equal(b.state, 'open');
     assert.equal(eventsOf(r.book, 'bid/suspended').length, 0);

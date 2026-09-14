@@ -7,6 +7,8 @@
  * possible.
  */
 
+import type { DeclineCause, RevokeCause } from './codes.js';
+
 /** §2.1 — the stable bid envelope. Payload beyond this is contract-defined. */
 export interface BidEnvelope {
   roomId: string;
@@ -51,7 +53,12 @@ export type BidState =
    *  grants; re-entry requires an explicit fresh bid. The lapse records
    *  facts, not motive — it never claims the participant departed.
    *  (Trial FINDING-9; ruling by Mica 2026-08-13, K=3.) */
-  | 'lapsed';
+  | 'lapsed'
+  /** Terminal: the bid's owner spoke on it — its grant was accepted (§9
+   *  `bid/consumed by=accepted`). A consumed revision is never re-offered,
+   *  whatever its grant's own terminal turns out to be (released, revoked,
+   *  lease-expired): the turn happened. Re-entry is a fresh bid. */
+  | 'consumed';
 
 export interface Bid extends BidEnvelope {
   state: BidState;
@@ -108,7 +115,9 @@ export interface Receipt {
   at: number;
   /** Medium-reported boundary when a turn was cut (voice: voiced/unvoiced). */
   boundary?: { voiced?: string; unvoiced?: string; estimated?: boolean };
-  reason?: string;
+  /** Why, as a code from §9's closed set (a decline or revoke cause). There
+   *  is no free-text reason field: an explanation is room traffic. */
+  cause?: DeclineCause | RevokeCause;
 }
 
 /** §3 — the announced logic contract: a real policy boundary. Versioned,
@@ -165,6 +174,11 @@ export interface FloorEvent {
     | 'bid/lapsed'
     | 'bid/suspended'
     | 'bid/reactivated'
+    /** §9 / §12 0b: the one exactly-once terminal for a bid REVISION —
+     *  `by` names which of the closed set consumed it. Re-affirmation of
+     *  a staled revision bumps the revision, so the same bidId can be
+     *  consumed again only as a later revision. */
+    | 'bid/consumed'
     /** A service invariant failed (e.g. an offer reached a suspended
      *  revision). Distinct from degradation telemetry: this is the book
      *  reporting itself, loudly. */

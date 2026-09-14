@@ -11,6 +11,7 @@
 
 import type { FloorBook } from './book.js';
 import type { Bid, LogicContract } from './types.js';
+import type { HoldCause } from './codes.js';
 
 export interface GrantDecision {
   kind: 'grant';
@@ -25,7 +26,9 @@ export interface GrantDecision {
 
 export interface HoldDecision {
   kind: 'hold';
-  reason: string;
+  /** §9 `arbitration/hold` — a code, never prose: the decision is
+   *  ledgered wherever a host records decisions. */
+  cause: HoldCause;
 }
 
 export type LogicDecision = GrantDecision | HoldDecision;
@@ -136,9 +139,9 @@ export class FluidFairnessLogic implements Logic {
   }
 
   decide(book: FloorBook, now: number): LogicDecision {
-    if (book.liveGrant) return { kind: 'hold', reason: 'floor occupied' };
+    if (book.liveGrant) return { kind: 'hold', cause: 'floor-occupied' };
     const open = book.openBids();
-    if (open.length === 0) return { kind: 'hold', reason: 'no open bids' };
+    if (open.length === 0) return { kind: 'hold', cause: 'no-open-bids' };
     // Expiry backoff DOWNRANKS (antra 2026-08-11: "downrank them for the
     // next few rounds"): in any contested round a struck bidder loses to
     // every eligible competitor. When even the round's best bid is in
@@ -160,7 +163,7 @@ export class FluidFairnessLogic implements Logic {
     const urgent = open.filter((b) => b.readinessKind === 'urgent');
     const chosen = urgent.length > 0 ? pick(urgent) : pick(open);
     if (!this.eligible(chosen.participantId, now)) {
-      return { kind: 'hold', reason: 'best bid cooling down after lease expiry' };
+      return { kind: 'hold', cause: 'cooldown' };
     }
     return {
       kind: 'grant',
@@ -201,6 +204,6 @@ export class ChairedLogic implements Logic {
   }
 
   decide(): LogicDecision {
-    return { kind: 'hold', reason: 'chair discretion: the queue informs, the chair decides' };
+    return { kind: 'hold', cause: 'chair-discretion' };
   }
 }

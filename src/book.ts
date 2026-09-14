@@ -32,6 +32,14 @@ import type {
   TerminalState,
 } from './types.js';
 import { digestContract } from './contract.js';
+import {
+  assertClosedCodes,
+  FloorRefusal,
+  type CancelCause,
+  type ConsumedBy,
+  type DeclineCause,
+  type RevokeCause,
+} from './codes.js';
 
 export class FloorBook {
   readonly roomId: string;
@@ -51,6 +59,9 @@ export class FloorBook {
   static readonly DEGRADED_AFTER_NO_ACCEPT_STREAK = 3;
   private consecutiveOfferExpiries = 0;
   private degradedEmitted = false;
+  /** §9 / §12 0b exactly-once: every (bidId, revision) is consumed by at
+   *  most one `bid/consumed by=` terminal. The book checks itself. */
+  private consumed = new Set<string>();
 
   constructor(roomId: string, processEpoch: string) {
     this.roomId = roomId;
@@ -67,12 +78,14 @@ export class FloorBook {
     this.contract = contract;
     this.contractDigest = digestContract(contract);
     if (this.activeGrant && this.activeGrant.state !== 'terminal') {
-      this.terminate(this.activeGrant.grantId, 'revoked', now, 'contract change');
+      // §2.3 epoch death: a grant never survives a logic swap.
+      this.terminate(this.activeGrant.grantId, 'revoked', now, 'epoch-death');
     }
     for (const bid of this.bids.values()) {
       if (bid.state === 'open' || bid.state === 'granted') {
         bid.state = 'stale';
-        this.emit('bid/staled', now, { bidId: bid.bidId, reason: 'contract change' });
+        this.emit('bid/staled', now, { bidId: bid.bidId, cause: 'contract-change' });
+        this.consume(bid, 'staled', now);
       }
     }
     this.emit('contract/changed', now, {
@@ -112,7 +125,7 @@ export class FloorBook {
     for (const existing of this.bids.values()) {
       if (existing.participantId !== env.participantId) continue;
       if (existing.state === 'granted') {
-        throw new Error(`${env.participantId} holds a granted bid (${existing.bidId}); release or decline before rebidding`);
+        throw new FloorRefusal('one-bid-rule', `${env.participantId} holds a granted bid (${existing.bidId}); release or decline before rebidding`);
       }
       if (existing.state === 'open' || existing.state === 'stale' || existing.state === 'suspended') {
         if (existing.state === 'suspended') {
@@ -192,11 +205,15 @@ export class FloorBook {
     return bid;
   }
 
-  cancelBid(bidId: string, now: number): void {
+  /** Cancel by the owner (`participant`) or because the owner spent the bid
+   *  outside the book (`spent-out-of-band`, stage 0b). Both consume the
+   *  revision; `expired` is the tick's own cause and never a caller's. */
+  cancelBid(bidId: string, now: number, cause: Exclude<CancelCause, 'expired'> = 'participant'): void {
     const bid = this.mustBid(bidId);
     if (bid.state === 'granted') throw new Error('cancel the grant, not the bid, once granted');
     bid.state = 'cancelled';
-    this.emit('bid/cancelled', now, { bidId });
+    this.emit('bid/cancelled', now, { bidId, cause });
+    this.consume(bid, cause === 'participant' ? 'cancelled' : cause, now);
   }
 
   /** §8: a bid resolves into a recorded contribution without a grant. */
@@ -297,7 +314,7 @@ export class FloorBook {
     if (g.state !== 'offered') throw new Error(`grant ${grantId} is ${g.state}`);
     if (now > g.acceptBy) {
       this.expireOffer(g, now);
-      throw new Error(`late accept refused: accept-TTL elapsed ${now - g.acceptBy}ms ago (grant ${grantId})`);
+      throw new FloorRefusal('late-accept', `late accept refused: accept-TTL elapsed ${now - g.acceptBy}ms ago (grant ${grantId})`);
     }
     g.state = 'accepted';
     g.leaseUntil = now + g.speechLeaseMs;
@@ -305,20 +322,27 @@ export class FloorBook {
     if (bid) bid.ignoredOffers = 0; // acceptance clears the ignored-offer streak
     this.noteAcceptance(now);
     this.emit('grant/accepted', now, { grantId, leaseUntil: g.leaseUntil });
+    // §9: acceptance is the moment the owner takes the turn — the revision
+    // is consumed here, whatever the grant's own terminal turns out to be.
+    if (bid) this.consume(bid, 'accepted', now);
     return g;
   }
 
-  declineGrant(grantId: string, now: number, reason?: string, blockedHead?: string): Receipt {
+  /** The holder declines. `participant` is the holder's own decline — no
+   *  reason text; the act is the reason (§9). `stale-head` is the prepared
+   *  bidder's refusal of an offer whose head moved; `withdrawn-in-shadow`
+   *  is stage 0b's undelivered-offer withdrawal. */
+  declineGrant(grantId: string, now: number, cause: DeclineCause = 'participant', blockedHead?: string): Receipt {
     // The prepared-bid fast path's stale-head branch: winner declines, rebids.
     const g = this.activeGrant && this.activeGrant.grantId === grantId ? this.activeGrant : null;
-    const receipt = this.terminate(grantId, 'declined', now, reason);
+    const receipt = this.terminate(grantId, 'declined', now, cause);
     // FINDING-14 family (ruling 2026-08-18): a stale-head decline parks the
     // exact revision — terminate returned it to 'open', which is precisely
     // the churn engine (return-to-book → sole bid → immediate futile
     // re-offer, measured at ~6s/cycle for ~100 cycles). Suspension keeps
     // the decline responsive (no lapse, no fairness charge) while making
     // repetition structurally impossible.
-    if (reason === 'stale-head' && g) {
+    if (cause === 'stale-head' && g) {
       const bid = this.bids.get(g.bidId);
       if (bid && bid.state === 'open') {
         bid.state = 'suspended';
@@ -369,8 +393,11 @@ export class FloorBook {
     return this.terminate(grantId, 'released', now, undefined, boundary);
   }
 
-  revokeGrant(grantId: string, now: number, reason?: string): Receipt {
-    return this.terminate(grantId, 'revoked', now, reason);
+  /** Revoke, by whose authority: `chair`, `moderation`, or `epoch-death`
+   *  (§9). The acting identity is its own field on the receipt's event —
+   *  never part of the code — and an explanation is room traffic. */
+  revokeGrant(grantId: string, now: number, cause: RevokeCause, actor?: string): Receipt {
+    return this.terminate(grantId, 'revoked', now, cause, undefined, actor);
   }
 
   /** Deterministic time passage: expire overdue offers, leases, and bids.
@@ -387,7 +414,8 @@ export class FloorBook {
     for (const bid of this.bids.values()) {
       if (bid.state === 'open' && bid.expiresAt !== null && bid.expiresAt <= now) {
         bid.state = 'expired';
-        this.emit('bid/cancelled', now, { bidId: bid.bidId, reason: 'expired' });
+        this.emit('bid/cancelled', now, { bidId: bid.bidId, cause: 'expired' });
+        this.consume(bid, 'expired', now);
       }
     }
   }
@@ -411,6 +439,7 @@ export class FloorBook {
           cause: 'ignored-offers',
           expiryCount: bid.ignoredOffers,
         });
+        this.consume(bid, 'lapsed', now);
       }
     }
     this.consecutiveOfferExpiries += 1;
@@ -471,7 +500,8 @@ export class FloorBook {
       if (bid.state === 'open' || bid.state === 'granted') {
         const revived: Bid = { ...bid, state: 'stale' };
         book.bids.set(revived.bidId, revived);
-        book.emit('bid/staled', now, { bidId: bid.bidId, reason: 'process restart — revalidation required' });
+        book.emit('bid/staled', now, { bidId: bid.bidId, cause: 'process-restart' });
+        book.consume(revived, 'staled', now);
       }
     }
     return book;
@@ -483,8 +513,9 @@ export class FloorBook {
     grantId: string,
     terminal: TerminalState,
     now: number,
-    reason?: string,
+    cause?: DeclineCause | RevokeCause,
     boundary?: Receipt['boundary'],
+    actor?: string,
   ): Receipt {
     const existing = this.receipts.get(grantId);
     if (existing) return existing; // idempotent: exactly one terminal state
@@ -495,6 +526,7 @@ export class FloorBook {
     // deadline and how overdue detection was.
     const deadline = g.state === 'offered' ? g.acceptBy : g.leaseUntil;
     const overdueMs = Math.max(0, now - deadline);
+    const wasAccepted = g.state === 'accepted';
     g.state = 'terminal';
     const receipt: Receipt = {
       grantId,
@@ -502,15 +534,22 @@ export class FloorBook {
       terminal,
       at: now,
       ...(boundary ? { boundary } : {}),
-      ...(reason ? { reason } : {}),
+      ...(cause ? { cause } : {}),
     };
     this.receipts.set(grantId, receipt);
     const bid = this.bids.get(g.bidId);
+    const holderEnded = terminal === 'released' || terminal === 'completed';
     if (bid && bid.state === 'granted') {
-      // Declined/revoked/expired turns return the bid to the book so the
-      // participant may be matched again; released/completed consume it.
-      // (Lapse, when due, is applied by expireOffer after this returns.)
-      bid.state = terminal === 'released' || terminal === 'completed' ? 'cancelled' : 'open';
+      // An ACCEPTED grant's bid was consumed at acceptance (§9): the turn
+      // happened, whatever ended it — released, revoked, or overrun — and
+      // the revision is never re-offered. A release of a grant that was
+      // never formally accepted is the holder's acceptance and release in
+      // one act: they took the turn and ended it, so it consumes the same
+      // way. A grant that ended before anyone acted on it (declined,
+      // offer-expired, revoked while offered) returns the bid to the book:
+      // nobody took a turn. (Lapse, when due, is applied by expireOffer
+      // after this returns.)
+      bid.state = wasAccepted || holderEnded ? 'consumed' : 'open';
     }
     this.activeGrant = g; // kept for receipt lineage; liveGrant getter filters terminal
     const isExpiry = terminal === 'offer-expired' || terminal === 'lease-expired';
@@ -518,9 +557,24 @@ export class FloorBook {
       grantId,
       terminal,
       ...(isExpiry ? { deadline, overdueMs } : {}),
-      ...(reason ? { reason } : {}),
+      ...(cause ? { cause } : {}),
+      ...(actor ? { actor } : {}),
     });
+    if (bid && holderEnded && !wasAccepted) this.consume(bid, 'accepted', now);
     return receipt;
+  }
+
+  /** The exactly-once terminal (§9, §12 0b). A second consumption of the
+   *  same revision is the book contradicting itself: reported loudly as a
+   *  `book/invariant`, then refused. */
+  private consume(bid: Bid, by: ConsumedBy, now: number): void {
+    const key = `${bid.bidId}#r${bid.revision}`;
+    if (this.consumed.has(key)) {
+      this.emit('book/invariant', now, { kind: 'double-consumption', bidId: bid.bidId, revision: bid.revision, by });
+      throw new Error(`invariant: bid ${bid.bidId} r${bid.revision} already consumed; a second bid/consumed (${by}) is impossible`);
+    }
+    this.consumed.add(key);
+    this.emit('bid/consumed', now, { bidId: bid.bidId, participantId: bid.participantId, revision: bid.revision, by });
   }
 
   private mustBid(bidId: string): Bid {
@@ -537,7 +591,11 @@ export class FloorBook {
     return g;
   }
 
+  /** Every event passes §9's schema rule before it is appended: a code
+   *  outside the closed set, or a free-text `reason`, is refused here — the
+   *  ledger never sees it. */
   private emit(type: FloorEvent['type'], at: number, data: Record<string, unknown>): void {
+    assertClosedCodes({ type, data });
     this.seq += 1;
     this.events.push({ seq: this.seq, at, type, data });
   }

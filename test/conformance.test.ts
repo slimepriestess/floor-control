@@ -147,7 +147,7 @@ describe('idempotent terminal receipts', () => {
     bid(room.book, 'mica', 'b1', T0 + 1);
     const { grant } = svc.arbitrate(room.roomId, T0 + 2);
     const r1 = svc.release(room.roomId, grant!.grantId, T0 + 3, { voiced: 'hello', estimated: false });
-    const r2 = room.book.revokeGrant(grant!.grantId, T0 + 4, 'late revoke attempt');
+    const r2 = room.book.revokeGrant(grant!.grantId, T0 + 4, 'chair', 'antra');
     assert.equal(r2, r1, 'second terminal returns the first receipt unchanged');
     assert.equal(r2.terminal, 'released');
     assert.equal(room.book.receiptFor(grant!.grantId), r1);

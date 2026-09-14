@@ -13,7 +13,7 @@
  *   !floor amend <bidId> [readiness=…] [subject=…] [digest=…]
  *   !floor cancel <bidId>
  *   !floor accept <grantId>
- *   !floor decline <grantId> [reason=…]
+ *   !floor decline <grantId> [reason=stale-head]   (any other reason text = the holder's own decline; text dropped)
  *   !floor release <grantId>
  *   !floor continue <grantId> +15s
  *   !floor ack <subjectRef>
@@ -31,9 +31,15 @@ export interface FloorOp {
     | 'release'
     | 'continue'
     | 'ack'
-    | 'status';
+    | 'status'
+    /** `!floor <something the grammar does not know>` — surfaced, not
+     *  swallowed: the host ledgers it `op-error cause=unknown-op` (§9). A
+     *  line that is not `!floor …` at all is still ordinary chatter. */
+    | 'unknown';
   id?: string;
   args: Record<string, string>;
+  /** The verb as written, for `unknown` only. */
+  unknownVerb?: string;
 }
 
 const OP_RE = /^!floor\s+(\w+)(?:\s+(.*))?$/s;
@@ -47,7 +53,7 @@ export function parseOp(line: string): FloorOp | null {
   const known: FloorOp['verb'][] = [
     'join', 'bid', 'amend', 'cancel', 'accept', 'decline', 'release', 'continue', 'ack', 'status',
   ];
-  if (!known.includes(verb)) return null;
+  if (!known.includes(verb)) return { verb: 'unknown', args: {}, unknownVerb: verb };
   const rest = (m[2] ?? '').trim();
   const tokens = rest.length ? rest.split(/\s+/) : [];
   const op: FloorOp = { verb, args: {} };

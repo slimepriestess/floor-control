@@ -8,6 +8,7 @@
 import { FloorBook } from './book.js';
 import { FluidFairnessLogic, type Logic, type LogicDecision } from './logics.js';
 import type { Bid, BindingClaim, Grant, Receipt } from './types.js';
+import { FloorRefusal, type DeclineCause } from './codes.js';
 
 export interface Room {
   roomId: string;
@@ -146,7 +147,7 @@ export class FloorService {
       if (
         holder &&
         holder.grantId === grantId &&
-        (err as Error).message.startsWith('late accept refused') &&
+        err instanceof FloorRefusal && err.code === 'late-accept' &&
         room.book.receiptFor(grantId)?.terminal === 'offer-expired' &&
         room.logic instanceof FluidFairnessLogic
       ) {
@@ -156,12 +157,12 @@ export class FloorService {
     }
   }
 
-  decline(roomId: string, grantId: string, now: number, reason?: string, blockedHead?: string): Receipt {
+  decline(roomId: string, grantId: string, now: number, cause: DeclineCause = 'participant', blockedHead?: string): Receipt {
     const room = this.mustRoom(roomId);
     const grant = room.book.liveGrant;
-    const receipt = room.book.declineGrant(grantId, now, reason, blockedHead);
+    const receipt = room.book.declineGrant(grantId, now, cause, blockedHead);
     if (grant) {
-      if (reason === 'stale-head' && room.logic instanceof FluidFairnessLogic) {
+      if (cause === 'stale-head' && room.logic instanceof FluidFairnessLogic) {
         // §2.2 ruling: fairness MUST NOT punish a correct stale-head
         // refusal. Responsive (strikes clear) — but the decliner never
         // held the floor, so no held-history stamp.
@@ -197,11 +198,14 @@ export class FloorService {
     );
   }
 
-  chairRevoke(roomId: string, actorId: string, grantId: string, now: number, reason?: string): Receipt {
+  /** The chair revokes. No operator string rides the receipt (§9): the
+   *  cause is `chair`, the actor is its own field, and the chair's
+   *  explanation — if any — is room traffic. */
+  chairRevoke(roomId: string, actorId: string, grantId: string, now: number): Receipt {
     const room = this.mustRoom(roomId);
     this.mustBeChair(room, actorId);
     const grant = room.book.liveGrant;
-    const receipt = room.book.revokeGrant(grantId, now, reason ?? `revoked by chair ${actorId}`);
+    const receipt = room.book.revokeGrant(grantId, now, 'chair', actorId);
     if (grant) this.noteTerminal(room, grant, now);
     return receipt;
   }
@@ -245,7 +249,7 @@ export class FloorService {
   private mustBeChair(room: Room, actorId: string): void {
     const chairId = room.book.currentContract?.contract.knobs.chairId;
     if (chairId !== actorId) {
-      throw new Error(`actor ${actorId} is not this room's chair (contract names ${String(chairId)})`);
+      throw new FloorRefusal('rank', `actor ${actorId} is not this room's chair (contract names ${String(chairId)})`);
     }
   }
 }

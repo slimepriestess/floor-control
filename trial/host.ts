@@ -15,6 +15,7 @@ import { dirname } from 'node:path';
 import { FloorService } from '../src/service.js';
 import { FluidFairnessLogic, type Logic } from '../src/logics.js';
 import type { Grant } from '../src/types.js';
+import { assertClosedCodes, FloorRefusal, type OpErrorCause } from '../src/codes.js';
 import { parseOp, parseDuration, eventLine, type FloorOp } from './band.js';
 import type { InboundMessage, RoomTransport } from './transport.js';
 
@@ -145,7 +146,15 @@ export class FloorRoomHost {
     }
     const op = parseOp(m.text);
     if (!op) return; // ordinary chatter in the control thread
-    this.ledger({ kind: 'op', at: m.at, participantId: m.authorId, op: op.verb, id: op.id, args: op.args, raw: m.raw });
+    const verb = op.verb === 'unknown' ? (op.unknownVerb ?? '?') : op.verb;
+    // The op row keeps the parsed args (ids, readiness, digests) — protocol
+    // values. A decline's `reason=` is the one arg that can carry text, and
+    // §9 admits only its code: normalized to `stale-head` when that is what
+    // was asserted, dropped otherwise (the act is the reason). The row
+    // still shows an arg was given, as `cause`.
+    const { reason, ...rest } = op.args;
+    const args = reason === undefined ? rest : { ...rest, cause: reason === 'stale-head' ? 'stale-head' : 'participant' };
+    this.ledger({ kind: 'op', at: m.at, participantId: m.authorId, op: verb, id: op.id, args, raw: m.raw });
     try {
       this.apply(op, m);
     } catch (err) {
@@ -153,9 +162,19 @@ export class FloorRoomHost {
       // failed op whose refusal lives solely in channel scroll makes the
       // ledger claim the op silently vanished (FINDING: epoch 20-47's
       // human accept left no trace of *why* it produced no grant).
-      this.ledger({ kind: 'op-error', at: m.at, participantId: m.authorId, op: op.verb, id: op.id, reason: (err as Error).message });
+      //
+      // What reaches the ledger is the CODE (§9 `op-error cause=`): the
+      // message is protocol text and goes to the control band, where a
+      // human reads it, not into metadata. A refusal without a code is not
+      // a participant refusal at all — it is the service failing an
+      // invariant — and is ledgered as such rather than dressed as one.
+      if (err instanceof FloorRefusal) {
+        this.ledger({ kind: 'op-error', at: m.at, participantId: m.authorId, op: verb, id: op.id, cause: err.code });
+      } else {
+        this.ledger({ kind: 'host-invariant', at: m.at, participantId: m.authorId, op: verb, id: op.id, error: (err as Error).message });
+      }
       void this.transport.sendControl(
-        eventLine('error', { op: op.verb, from: m.authorName, reason: (err as Error).message }),
+        eventLine('error', { op: verb, from: m.authorName, cause: err instanceof FloorRefusal ? err.code : 'invariant', detail: (err as Error).message }),
       );
     }
     this.pump();
@@ -166,6 +185,8 @@ export class FloorRoomHost {
     const pid = m.authorId;
     const c = this.book.currentContract!;
     switch (op.verb) {
+      case 'unknown':
+        throw new FloorRefusal('unknown-op', `unknown op: !floor ${op.unknownVerb ?? '?'}`);
       case 'join': {
         // FINDING-7 (accepted 2026-08-13): a GENUINE join is a logged
         // liveness transition and begins a new quiet epoch — a newcomer
@@ -212,6 +233,7 @@ export class FloorRoomHost {
         return;
       }
       case 'amend': {
+        this.mustOwnBid(pid, this.mustId(op));
         const patch: Record<string, unknown> = {};
         if (op.args.readiness) patch.readinessKind = op.args.readiness;
         if (op.args.subject) patch.subjectRef = op.args.subject;
@@ -221,7 +243,8 @@ export class FloorRoomHost {
         return;
       }
       case 'cancel':
-        this.book.cancelBid(this.mustId(op), now);
+        this.mustOwnBid(pid, this.mustId(op));
+        this.book.cancelBid(this.mustId(op), now, 'participant');
         return;
       case 'accept':
         // A late accept is refused EXPLICITLY (FINDING-8): the book
@@ -233,13 +256,21 @@ export class FloorRoomHost {
         // host-level book call bypassed noteExpired, letting a late
         // accepter skip its backoff entirely).
         try {
+          // Lateness outranks holdership: an accept on YOUR offer that the
+          // tick already expired is late, not a stranger's — the same row
+          // whether the book or the host notices first.
+          if (this.wasMyExpiredOffer(pid, this.mustId(op))) {
+            throw new FloorRefusal('late-accept', `late accept refused: offer ${this.mustId(op)} already expired`);
+          }
+          this.mustHold(pid, this.mustId(op));
           this.service.accept(this.roomId, this.mustId(op), now);
         } catch (err) {
-          const reason = (err as Error).message;
-          if (reason.startsWith('late accept refused')) {
-            this.ledger({ kind: 'late-accept-refused', at: now, participantId: pid, grantId: this.mustId(op) });
+          if (err instanceof FloorRefusal && err.code === 'late-accept') {
+            // §9 `accept/refused cause=accept-ttl-elapsed` — the same row in
+            // the ledger and on the band.
+            this.ledger({ kind: 'accept/refused', at: now, participantId: pid, grantId: this.mustId(op), cause: 'accept-ttl-elapsed' });
             void this.transport.sendControl(
-              eventLine('accept/refused', { grantId: this.mustId(op), participant: m.authorName, reason: 'accept-ttl-elapsed' }),
+              eventLine('accept/refused', { grantId: this.mustId(op), participant: m.authorName, cause: 'accept-ttl-elapsed' }),
             );
             return;
           }
@@ -248,8 +279,13 @@ export class FloorRoomHost {
         return;
       case 'decline': {
         const grantId = this.mustId(op);
+        this.mustHold(pid, grantId);
         const blockedHead = this.offerHeads.get(grantId);
-        this.service.decline(this.roomId, grantId, now, op.args.reason, blockedHead);
+        // The band's `reason=` is either the one code a participant may
+        // assert (`stale-head`) or the holder's own decline: the act is the
+        // reason and any text is dropped here, before the ledger (§9).
+        const cause = op.args.reason === 'stale-head' ? 'stale-head' : 'participant';
+        this.service.decline(this.roomId, grantId, now, cause, blockedHead);
         // If the room head already moved past the head this offer carried,
         // the suspension's blocking condition is ALREADY gone — reconcile
         // immediately rather than waiting for the next speech.
@@ -259,11 +295,13 @@ export class FloorRoomHost {
         return;
       }
       case 'release':
+        this.mustHold(pid, this.mustId(op));
         this.service.release(this.roomId, this.mustId(op), now);
         return;
       case 'continue': {
+        this.mustHold(pid, this.mustId(op));
         const ext = op.args.extend ? parseDuration(op.args.extend) : null;
-        if (!ext) throw new Error('continue needs +<duration>, e.g. !floor continue g4 +15s');
+        if (!ext) throw new FloorRefusal('unknown-op', 'continue needs +<duration>, e.g. !floor continue g4 +15s');
         this.book.continueGrant(this.mustId(op), now + ext, now);
         return;
       }
@@ -407,18 +445,51 @@ export class FloorRoomHost {
 
   // ── internals ──
 
+  /** Standing to bid (§3): a contract acknowledged by joining. Without it
+   *  the participant lacks rank in this room — §9's code for that. */
   private mustBeJoined(pid: string, digest: string): void {
     const acked = this.joined.get(pid);
-    if (!acked) throw new Error('join first: bids bind a contract you have acknowledged (§3) — send !floor join');
-    if (acked !== digest) throw new Error('contract changed since you joined — re-join to acknowledge the new terms');
+    if (!acked) throw new FloorRefusal('rank', 'join first: bids bind a contract you have acknowledged (§3) — send !floor join');
+    if (acked !== digest) throw new FloorRefusal('rank', 'contract changed since you joined — re-join to acknowledge the new terms');
+  }
+
+  /** Grant-directed ops (accept, decline, release, continue) are the
+   *  HOLDER's. Anyone else naming that grant — or naming a grant that is
+   *  not live — is refused `not-holder` (§9), never silently applied to
+   *  someone else's turn. */
+  private mustHold(pid: string, grantId: string): void {
+    const g = this.book.liveGrant;
+    if (!g || g.grantId !== grantId || g.participantId !== pid) {
+      throw new FloorRefusal('not-holder', `${pid} does not hold live grant ${grantId}`);
+    }
+  }
+
+  /** An offer that was this participant's and is now terminal offer-expired:
+   *  the accept is late (§9 `accept/refused cause=accept-ttl-elapsed`). */
+  private wasMyExpiredOffer(pid: string, grantId: string): boolean {
+    if (this.book.receiptFor(grantId)?.terminal !== 'offer-expired') return false;
+    const offered = this.book.eventLog().find((e) => e.type === 'grant/offered' && e.data.grantId === grantId);
+    return offered?.data.participantId === pid;
+  }
+
+  /** Bid-directed ops (amend, cancel) are the OWNER's. */
+  private mustOwnBid(pid: string, bidId: string): void {
+    const b = this.book.listBids().find((x) => x.bidId === bidId);
+    if (!b || b.participantId !== pid) {
+      throw new FloorRefusal('not-holder', `${pid} does not own bid ${bidId}`);
+    }
   }
 
   private mustId(op: FloorOp): string {
-    if (!op.id) throw new Error(`${op.verb} needs an id`);
+    if (!op.id) throw new FloorRefusal('unknown-op', `${op.verb} needs an id`);
     return op.id;
   }
 
   private ledger(entry: Record<string, unknown>): void {
+    // §9's schema rule at the ledger boundary: a coded field outside the
+    // closed set, or a free-text `reason`, cannot be written. Throws —
+    // a ledger that would have lied is a ledger that stops.
+    assertClosedCodes(entry);
     if (this.opts.ledgerPath) appendFileSync(this.opts.ledgerPath, JSON.stringify(entry) + '\n');
   }
 }

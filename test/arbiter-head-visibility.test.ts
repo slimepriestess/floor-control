@@ -86,7 +86,7 @@ test('real speech arriving before the banner send resolves is not clobbered', as
   }
 });
 
-test('a refused op reaches the ledger with its reason (op-error)', async () => {
+test('a refused op reaches the ledger with its cause code (op-error, §9)', async () => {
   const { bus, host, ledger } = rig();
   host.start();
   try {
@@ -95,10 +95,11 @@ test('a refused op reaches the ledger with its reason (op-error)', async () => {
       await until(() => ledger.some((e) => e.kind === 'op-error'), 2_000),
       'op-error ledgered',
     );
-    const err = ledger.find((e) => e.kind === 'op-error') as { op: string; participantId: string; reason: string };
+    const err = ledger.find((e) => e.kind === 'op-error') as { op: string; participantId: string; cause: string; reason?: string };
     assert.equal(err.op, 'accept');
     assert.equal(err.participantId, 'ra-human');
-    assert.ok(err.reason.length > 0, 'reason recorded');
+    assert.equal(err.cause, 'not-holder', 'a grant that is not yours (or not live) is not-holder');
+    assert.equal(err.reason, undefined, 'no free-text reason field exists on the ledger');
   } finally {
     host.stop();
   }

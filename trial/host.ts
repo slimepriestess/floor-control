@@ -140,6 +140,15 @@ export class FloorRoomHost {
       this.activitySeq += 1;
       // Head advance reactivates stale-head-suspended bids (§2.2 ruling).
       this.book.noteHead(m.messageId, m.at);
+      // §6 burst hold: a delivered room-speech record, with the identity
+      // class the transport authenticated. Where a transport cannot say,
+      // the operator's exempt list (humans, per Session 1) is the only
+      // other structural fact the host holds; everyone else is a harness.
+      this.service.noteSpeech(this.roomId, {
+        participantId: m.authorId,
+        kind: m.authorKind ?? (this.opts.exemptIds?.includes(m.authorId) ? 'human' : 'agent'),
+        at: m.at,
+      });
       this.audit(m);
       this.pump();
       return;

@@ -75,6 +75,13 @@ export class FluidFairnessLogic implements Logic {
     acceptTtlMs?: Partial<Record<import('./types.js').ReadinessKind, number>>;
     expiryBackoffMs?: number;
     expiryBackoffCapMs?: number;
+    /** §6 burst hold: holder silence before the arbiter releases an
+     *  AGENT lease (rev 10: 2.5 s — 0/221 agent-origin handoffs delayed,
+     *  77 % of agent continuations coalesced). 0 disables the hold. */
+    burstReleaseMs?: number;
+    /** A contract MAY narrow the hold to some readiness kinds (e.g.
+     *  prepared only); it never widens to humans — kind is structural. */
+    burstHoldReadiness?: import('./types.js').ReadinessKind[];
     knobs?: Record<string, unknown>;
   }) {
     this.speechLeaseMs = opts?.speechLeaseMs ?? opts?.leaseMs ?? 30_000;
@@ -104,6 +111,8 @@ export class FluidFairnessLogic implements Logic {
         degradedAfterNoAcceptStreak: 3,
         expiryBackoffMs: this.expiryBackoffMs,
         expiryBackoffCapMs: this.expiryBackoffCapMs,
+        burstReleaseMs: opts?.burstReleaseMs ?? 2_500,
+        ...(opts?.burstHoldReadiness ? { burstHoldReadiness: opts.burstHoldReadiness } : {}),
         ...(opts?.knobs ?? {}),
       },
       moderation: [],

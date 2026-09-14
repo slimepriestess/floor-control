@@ -7,7 +7,7 @@
 
 import { FloorBook } from './book.js';
 import { FluidFairnessLogic, type Logic, type LogicDecision } from './logics.js';
-import type { Bid, BindingClaim, Grant, Receipt } from './types.js';
+import type { Bid, BindingClaim, BurstHold, Grant, ParticipantKind, Receipt } from './types.js';
 import { FloorRefusal, type DeclineCause } from './codes.js';
 
 export interface Room {
@@ -15,6 +15,19 @@ export interface Room {
   book: FloorBook;
   logic: Logic;
   bindings: BindingClaim[];
+  /** §6 burst hold on the live grant, or null. Arbiter-owned: only
+   *  noteSpeech creates it and only settleBurst / a terminal ends it. */
+  burst: BurstHold | null;
+}
+
+/** A delivered room-speech record as the transport reports it (§6): who,
+ *  by identity class, when, and whether the transport delivered it. */
+export interface SpeechRecord {
+  participantId: string;
+  kind: ParticipantKind;
+  at: number;
+  /** Default true. A send the transport reports as failed extends nothing. */
+  delivered?: boolean;
 }
 
 export class FloorService {
@@ -40,6 +53,7 @@ export class FloorService {
       book,
       logic,
       bindings: [{ locator, provenance, claimedAt: now, provisional: true }],
+      burst: null,
     };
     this.rooms.set(roomId, room);
     book.activateContract(logic.contract, now);
@@ -100,6 +114,10 @@ export class FloorService {
         room.logic.noteExpired(preTick.participantId, now);
       }
     }
+    // §6: after the book's own clocks (a lease expiry at the ceiling wins),
+    // settle the burst hold — a release here precedes the decision below,
+    // so the next bidder is offered only after the terminal.
+    this.settleBurst(room, now);
     const decision = room.logic.decide(room.book, now);
     if (decision.kind === 'grant') {
       const grant = room.book.offerGrant(
@@ -125,8 +143,70 @@ export class FloorService {
     const room = this.mustRoom(roomId);
     const grant = room.book.liveGrant;
     const receipt = room.book.releaseGrant(grantId, now, boundary);
+    if (room.burst?.grantId === grantId) room.burst = null; // an explicit release releases NOW
     if (grant) this.noteTerminal(room, grant, now);
     return receipt;
+  }
+
+  // ── §6 emission coalescing: the burst hold ──
+
+  /** A delivered room-speech record on this room's binding. If it is the
+   *  ACCEPTED holder's own speech, and the holder is agent-class, the hold
+   *  is (re)armed: releaseAt = min(at + burstReleaseMs, leaseUntil). Every
+   *  other case — another speaker, an offered-but-unaccepted grant, a
+   *  human holder, a failed send, a contract without a hold, a readiness
+   *  kind the contract excludes — leaves the hold exactly as it was.
+   *  Returns the hold in force after this record, or null. */
+  noteSpeech(roomId: string, rec: SpeechRecord): BurstHold | null {
+    const room = this.mustRoom(roomId);
+    const g = room.book.liveGrant;
+    if (!g || g.state !== 'accepted') return room.burst;
+    if (rec.delivered === false) return room.burst;
+    if (g.participantId !== rec.participantId) return room.burst;
+    if (rec.kind !== 'agent') return room.burst;
+    const knobs = room.book.currentContract?.contract.knobs ?? {};
+    const burstMs = Number(knobs.burstReleaseMs ?? 0);
+    if (!(burstMs > 0)) return room.burst;
+    const narrow = knobs.burstHoldReadiness;
+    if (Array.isArray(narrow)) {
+      const bid = room.book.listBids().find((b) => b.bidId === g.bidId);
+      if (bid && !narrow.includes(bid.readinessKind)) return room.burst;
+    }
+    room.burst = {
+      grantId: g.grantId,
+      generation: this.generationOf(room),
+      lastSpeechAt: rec.at,
+      releaseAt: Math.min(rec.at + burstMs, g.leaseUntil),
+    };
+    return room.burst;
+  }
+
+  /** The hold currently in force, if any — read-only. */
+  burstHold(roomId: string): BurstHold | null {
+    return this.mustRoom(roomId).burst;
+  }
+
+  private generationOf(room: Room): string {
+    return `${room.book.processEpoch}#${room.book.currentContract?.logicEpoch ?? 0}`;
+  }
+
+  /** Called from arbitrate after the book's own clocks. A hold whose grant
+   *  is gone, no longer accepted, or from another generation is dropped
+   *  without effect; a hold whose releaseAt has passed releases the grant
+   *  on the holder's behalf — the same `released` terminal an explicit
+   *  release produces (§6: the two carriers converge on one receipt). */
+  private settleBurst(room: Room, now: number): void {
+    const h = room.burst;
+    if (!h) return;
+    const g = room.book.liveGrant;
+    if (!g || g.grantId !== h.grantId || g.state !== 'accepted' || this.generationOf(room) !== h.generation) {
+      room.burst = null;
+      return;
+    }
+    if (now >= h.releaseAt) {
+      room.burst = null;
+      this.release(room.roomId, g.grantId, now);
+    }
   }
 
   /** Acceptance through the service, so terminal bookkeeping has one owner
@@ -161,6 +241,7 @@ export class FloorService {
     const room = this.mustRoom(roomId);
     const grant = room.book.liveGrant;
     const receipt = room.book.declineGrant(grantId, now, cause, blockedHead);
+    if (room.burst?.grantId === grantId) room.burst = null;
     if (grant) {
       if (cause === 'stale-head' && room.logic instanceof FluidFairnessLogic) {
         // §2.2 ruling: fairness MUST NOT punish a correct stale-head
@@ -206,6 +287,7 @@ export class FloorService {
     this.mustBeChair(room, actorId);
     const grant = room.book.liveGrant;
     const receipt = room.book.revokeGrant(grantId, now, 'chair', actorId);
+    if (room.burst?.grantId === grantId) room.burst = null;
     if (grant) this.noteTerminal(room, grant, now);
     return receipt;
   }
@@ -229,7 +311,8 @@ export class FloorService {
     for (const p of persisted) {
       const book = FloorBook.restore(p.roomId, newProcessEpoch, p.durableBids, now);
       book.activateContract(p.logic.contract, now);
-      svc.rooms.set(p.roomId, { roomId: p.roomId, book, logic: p.logic, bindings: p.bindings });
+      // Epoch death (§2.3): no hold survives a restart.
+      svc.rooms.set(p.roomId, { roomId: p.roomId, book, logic: p.logic, bindings: p.bindings, burst: null });
       const n = Number(p.roomId.split('#')[1]);
       if (Number.isFinite(n)) svc.roomCounter = Math.max(svc.roomCounter, n);
     }

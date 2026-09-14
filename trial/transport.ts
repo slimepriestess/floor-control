@@ -5,11 +5,17 @@
  * (portal-transport.ts) through this one interface.
  */
 
+import type { ParticipantKind } from '../src/types.js';
+
 export interface InboundMessage {
   /** Authenticated author identity — stamped by the transport, never claimed
    *  by the participant. This is the trial's participantId. */
   authorId: string;
   authorName: string;
+  /** §6: the identity CLASS the transport authenticated — a user account is
+   *  human; a persona, webhook or harness identity is agent. Structural,
+   *  never read off a display name. Absent = the transport cannot say. */
+  authorKind?: ParticipantKind;
   surface: 'room' | 'control';
   messageId: string;
   text: string;
@@ -47,7 +53,7 @@ export class LoopbackBus {
   // `at` is overridable because stamped-time and delivery-time genuinely
   // diverge on real transports (relay redelivery carries the original
   // timestamp) — and the host must stay honest under that divergence.
-  post(authorId: string, authorName: string, surface: 'room' | 'control', text: string, at?: number): string {
+  post(authorId: string, authorName: string, surface: 'room' | 'control', text: string, at?: number, kind?: ParticipantKind): string {
     this.counter += 1;
     const m: InboundMessage = {
       authorId,
@@ -56,6 +62,7 @@ export class LoopbackBus {
       messageId: `m${this.counter}`,
       text,
       at: at ?? Date.now(),
+      ...(kind ? { authorKind: kind } : {}),
     };
     this.log.push(m);
     // Deliver async so senders never re-enter their own handler stack.

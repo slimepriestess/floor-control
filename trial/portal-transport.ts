@@ -159,6 +159,9 @@ export class PortalTransport implements RoomTransport {
         : author.bot
           ? `webhook:${author.username ?? author.displayName}`
           : `user:${author.userId}`;
+    // §6 identity class, from the same facts as the id: persona/webhook =
+    // agent, user account = human. Not from the display name.
+    const authorKind: 'human' | 'agent' = author.kind === 'persona' || author.bot ? 'agent' : 'human';
     const raw = {
       relayMessageId: m.id,
       kind: author.kind,
@@ -194,6 +197,7 @@ export class PortalTransport implements RoomTransport {
     return {
       authorId,
       authorName: author.displayName ?? author.username ?? authorId,
+      authorKind,
       surface,
       messageId: m.nativeId,
       text,

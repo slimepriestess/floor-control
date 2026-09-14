@@ -30,6 +30,24 @@ export interface BidEnvelope {
 
 export type ReadinessKind = 'intent' | 'prepared' | 'manual' | 'urgent';
 
+/** §6 — the identity class the transport adapter authenticated at join
+ *  (persona/webhook/harness identity = agent; a user account = human).
+ *  Structural: never a classification of text, timing or display name. */
+export type ParticipantKind = 'human' | 'agent';
+
+/** §6 emission coalescing — the burst hold is ARBITER state on the live
+ *  grant. It belongs to exactly one (grantId, generation); each qualifying
+ *  send moves lastSpeechAt and sets releaseAt = min(at + burstReleaseMs,
+ *  leaseUntil). A debounce inside the lease, not a lease. */
+export interface BurstHold {
+  grantId: string;
+  /** processEpoch#logicEpoch at the time of the hold — epoch death (§2.3)
+   *  ends a hold by making this stale. */
+  generation: string;
+  lastSpeechAt: number;
+  releaseAt: number;
+}
+
 export type BidState =
   | 'open'
   | 'granted'

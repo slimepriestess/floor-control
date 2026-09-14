@@ -234,7 +234,7 @@ export class FloorRoomHost {
             expiresAt: expires ? now + expires : null,
             readinessKind: (op.args.readiness as never) ?? 'intent',
             subjectRef: op.args.subject,
-            payload: op.args.digest ? { digest: op.args.digest } : undefined,
+            payload: this.payloadOf(op.args),
           },
           now,
         );
@@ -246,7 +246,7 @@ export class FloorRoomHost {
         const patch: Record<string, unknown> = {};
         if (op.args.readiness) patch.readinessKind = op.args.readiness;
         if (op.args.subject) patch.subjectRef = op.args.subject;
-        if (op.args.digest) patch.payload = { digest: op.args.digest };
+        if (op.args.digest || op.args.size) patch.payload = this.payloadOf(op.args);
         const bid = this.book.amendBid(this.mustId(op), patch, now);
         void this.transport.sendControl(eventLine('bid/amended', { bidId: bid.bidId, r: bid.revision }));
         return;
@@ -379,7 +379,11 @@ export class FloorRoomHost {
   }
 
   private checkIdle(now: number): void {
-    const idleAfter = this.opts.idleAfterMs ?? 60_000;
+    // §3: the quiet lease is the CONTRACT's value (static, digested, with
+    // provenance); the host option is only a fallback for rigs that build
+    // a logic without one.
+    const knobs = this.book.currentContract?.contract.knobs ?? {};
+    const idleAfter = typeof knobs.idleAfterMs === 'number' ? knobs.idleAfterMs : (this.opts.idleAfterMs ?? 60_000);
     // Open-but-ungrantable bids (expiry backoff) do NOT veto idleness: if a
     // grantable bid existed, this pump's arbitrate would have granted it and
     // liveGrant would be set. An idle floor with a stuck book is still idle.
@@ -401,7 +405,8 @@ export class FloorRoomHost {
     this.idleSeenSeq = this.activitySeq;
     this.idleArmed = false;
     this.idleEmissions += 1;
-    this.ledger({ kind: 'idle', at: now, quietMs: now - this.lastActivityAt });
+    const prov = knobs.idleAfterProvenance as { kind?: string } | undefined;
+    this.ledger({ kind: 'idle', at: now, quietMs: now - this.lastActivityAt, idleAfterMs: idleAfter, provenance: prov?.kind ?? 'host-option' });
     void this.transport.sendControl(
       eventLine('floor/idle', { quietMs: now - this.lastActivityAt, holder: 'none' }),
     );
@@ -453,6 +458,19 @@ export class FloorRoomHost {
   }
 
   // ── internals ──
+
+  /** The bid payload from band args: a digest (a hash) and a size (bytes
+   *  of prepared speech, §2.1) — never plaintext. */
+  private payloadOf(args: Record<string, string>): Record<string, unknown> | undefined {
+    const p: Record<string, unknown> = {};
+    if (args.digest) p.digest = args.digest;
+    if (args.size !== undefined) {
+      const n = Number(args.size);
+      if (!Number.isFinite(n) || n < 0) throw new FloorRefusal('unknown-op', `size must be a byte count, got ${args.size}`);
+      p.size = n;
+    }
+    return Object.keys(p).length ? p : undefined;
+  }
 
   /** Standing to bid (§3): a contract acknowledged by joining. Without it
    *  the participant lacks rank in this room — §9's code for that. */

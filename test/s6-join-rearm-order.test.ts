@@ -43,8 +43,9 @@ function rig() {
   const bus = new LoopbackBus();
   const host = new FloorRoomHost(
     new LoopbackTransport(bus, 'floor-service', 'floor-service'),
-    new FluidFairnessLogic({ speechLeaseMs: 1000 }),
-    { tickMs: 25, idleAfterMs: 150, exemptIds: ['ra-human'] },
+    // §3: the quiet lease is the contract's value; a rig states its provenance.
+    new FluidFairnessLogic({ speechLeaseMs: 1000, idleAfterMs: 150, idleAfterProvenance: { kind: 'operator', note: 'test rig' } }),
+    { tickMs: 25, exemptIds: ['ra-human'] },
   );
   return { bus, host };
 }

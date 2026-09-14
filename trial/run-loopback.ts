@@ -32,10 +32,13 @@ function rig(opts: { leaseMs: number; bots: BotOptions[]; exemptIds?: string[]; 
     new FluidFairnessLogic({
       speechLeaseMs: opts.leaseMs,
       acceptTtlMs: { intent: opts.leaseMs, prepared: opts.leaseMs, urgent: opts.leaseMs, manual: opts.leaseMs },
+      // §3: the quiet lease is a contract value with a stated provenance —
+      // here the loopback scenario's, scaled to its ms clock.
+      idleAfterMs: 1200,
+      idleAfterProvenance: { kind: 'operator', note: 'loopback scenario clock (leases in ms, not minutes)' },
     }),
     {
       tickMs: 50,
-      idleAfterMs: 1200,
       exemptIds: ['ra-human', ...(opts.exemptIds ?? [])],
       ledgerPath: opts.ledger,
     },

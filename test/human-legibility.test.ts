@@ -95,8 +95,8 @@ test('host start banners the room band: listening begins here, earlier ops were 
   const bus = new LoopbackBus();
   const host = new FloorRoomHost(
     new LoopbackTransport(bus, 'floor-service', 'floor-service'),
-    new FluidFairnessLogic({ speechLeaseMs: 1000 }),
-    { tickMs: 25, idleAfterMs: 10_000 },
+    new FluidFairnessLogic({ speechLeaseMs: 1000, idleAfterMs: 10_000, idleAfterProvenance: { kind: 'operator', note: 'test rig' } }),
+    { tickMs: 25 },
   );
   host.start();
   try {

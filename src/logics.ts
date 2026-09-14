@@ -10,8 +10,37 @@
  */
 
 import type { FloorBook } from './book.js';
-import type { Bid, LogicContract } from './types.js';
+import type { Bid, IdleProvenance, LogicContract } from './types.js';
 import type { HoldCause } from './codes.js';
+
+/** §3 — the lab value, labelled. */
+export const LAB_DEFAULT_IDLE: { idleAfterMs: number; idleAfterProvenance: IdleProvenance } = {
+  idleAfterMs: 60_000,
+  idleAfterProvenance: { kind: 'lab-default', note: 'the trial default, tuned to a standing-ready bot fleet; not a measurement of any room (§3, §12 C1: the social room is "quiet" by it 16.6×/day)' },
+};
+
+/** §3 / §12 — the stage-0a calibration receipt's mapping, computed by the
+ *  receipt (trial/calibration/calibrate.py on the rfc branch): p90 of the
+ *  room's all-pairs gap over the whole measured interval, pooled across
+ *  kinds, no trimming, rounded up to the next whole minute. Cited by the
+ *  aggregate report's digest as declared in the receipt's manifest. */
+const CALIBRATION_RULE = 'p90 of all-pairs message gap over the whole measured interval (2026-08-06..19), pooled across participant kinds, no active-hours trim, rounded up to the next whole minute';
+const CALIBRATION_REPORT_SHA256 = 'd8b7540914753163f5e453bea2719b46fc25796b31b8b7cce87062a89dfe2c10';
+export const IDLE_CALIBRATION: Record<'social' | 'general', { idleAfterMs: number; idleAfterProvenance: IdleProvenance }> = {
+  social: {
+    idleAfterMs: 1_440_000, // 24 min (gap p90 23.5 min); floor/idle ≈ 3.8×/day in the interval
+    idleAfterProvenance: { kind: 'measured', receipt: 'trial/calibration/MANIFEST.json (rev 10)', reportSha256: CALIBRATION_REPORT_SHA256, rule: CALIBRATION_RULE, room: 'Connectome #worlds' },
+  },
+  general: {
+    idleAfterMs: 8_520_000, // 142 min (gap p90 2.4 h); ≈ 1.1×/day
+    idleAfterProvenance: { kind: 'measured', receipt: 'trial/calibration/MANIFEST.json (rev 10)', reportSha256: CALIBRATION_REPORT_SHA256, rule: CALIBRATION_RULE, room: 'Connectome #general' },
+  },
+};
+
+/** §2.1 / §12 C4 — the measured agent turn, for a contract choosing a
+ *  `size` bound: p50 1.2 KB, p90 1.9 KB. A bound is a contract's choice;
+ *  none is assumed. */
+export const MEASURED_TURN_SIZE = { p50Bytes: 1_200, p90Bytes: 1_900 } as const;
 
 export interface GrantDecision {
   kind: 'grant';
@@ -82,8 +111,27 @@ export class FluidFairnessLogic implements Logic {
     /** A contract MAY narrow the hold to some readiness kinds (e.g.
      *  prepared only); it never widens to humans — kind is structural. */
     burstHoldReadiness?: import('./types.js').ReadinessKind[];
+    /** §3 quiet-room liveness: a static contract value WITH its provenance.
+     *  Omit both for the labelled lab default; give one without the other
+     *  and construction refuses — a number with no stated origin is exactly
+     *  the runtime-adaptive knob §3 forbids. */
+    idleAfterMs?: number;
+    idleAfterProvenance?: IdleProvenance;
+    /** §2.1: a bound on the bid envelope's `size` (bytes of prepared
+     *  speech), enforced by the book at create/amend. None by default; the
+     *  measured turn (MEASURED_TURN_SIZE) is a number to set it from. */
+    maxBidSizeBytes?: number;
     knobs?: Record<string, unknown>;
   }) {
+    if ((opts?.idleAfterMs === undefined) !== (opts?.idleAfterProvenance === undefined)) {
+      throw new Error('idleAfterMs and idleAfterProvenance travel together (§3): a quiet-room value must state where it came from');
+    }
+    if (opts?.maxBidSizeBytes !== undefined && !(Number.isFinite(opts.maxBidSizeBytes) && opts.maxBidSizeBytes > 0)) {
+      throw new Error('maxBidSizeBytes must be a positive finite byte count');
+    }
+    const idle = opts?.idleAfterMs !== undefined
+      ? { idleAfterMs: opts.idleAfterMs, idleAfterProvenance: opts.idleAfterProvenance! }
+      : LAB_DEFAULT_IDLE;
     this.speechLeaseMs = opts?.speechLeaseMs ?? opts?.leaseMs ?? 30_000;
     this.acceptTtlMs = {
       prepared: 15_000,
@@ -100,6 +148,9 @@ export class FluidFairnessLogic implements Logic {
       bidFields: {
         readinessKind: 'intent | prepared | urgent',
         subjectRef: 'optional — what the turn answers',
+        ...(opts?.maxBidSizeBytes !== undefined
+          ? { size: `bytes of prepared speech (payload.size); bound ${opts.maxBidSizeBytes}` }
+          : {}),
       },
       queueVisibility: 'full',
       eventShapes: ['floor:grant', 'floor:hold', 'floor:state', 'floor:idle'],
@@ -113,6 +164,9 @@ export class FluidFairnessLogic implements Logic {
         expiryBackoffCapMs: this.expiryBackoffCapMs,
         burstReleaseMs: opts?.burstReleaseMs ?? 2_500,
         ...(opts?.burstHoldReadiness ? { burstHoldReadiness: opts.burstHoldReadiness } : {}),
+        idleAfterMs: idle.idleAfterMs,
+        idleAfterProvenance: idle.idleAfterProvenance,
+        ...(opts?.maxBidSizeBytes !== undefined ? { maxBidSizeBytes: opts.maxBidSizeBytes } : {}),
         ...(opts?.knobs ?? {}),
       },
       moderation: [],

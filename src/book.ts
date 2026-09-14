@@ -122,6 +122,7 @@ export class FloorBook {
   ): Bid {
     if (!this.contract) throw new Error('no active contract: bids bind a contract they acknowledge');
     if (this.bids.has(env.bidId)) throw new Error(`bid ${env.bidId} already exists`);
+    this.checkSizeBound(env.payload);
     for (const existing of this.bids.values()) {
       if (existing.participantId !== env.participantId) continue;
       if (existing.state === 'granted') {
@@ -191,6 +192,7 @@ export class FloorBook {
     } else if (bid.state !== 'open') {
       throw new Error(`bid ${bidId} is ${bid.state}; only open/stale/suspended bids amend`);
     }
+    if ('payload' in patch) this.checkSizeBound(patch.payload);
     Object.assign(bid, patch);
     bid.revision += 1;
     if (wasSuspended) {
@@ -575,6 +577,21 @@ export class FloorBook {
     }
     this.consumed.add(key);
     this.emit('bid/consumed', now, { bidId: bid.bidId, participantId: bid.participantId, revision: bid.revision, by });
+  }
+
+  /** §2.1: the envelope defines `size` but no bound; a contract that
+   *  declares one (knob maxBidSizeBytes) has it enforced here, before the
+   *  bid exists. A payload without a size is not measured against it — the
+   *  bound is on declared prepared speech, not a demand that every bid
+   *  declare one. (Refused as a plain error: §9's op-error set has no code
+   *  for it yet — a rev-11 row; until then the host ledgers it as its own
+   *  invariant, never dressed as a participant code it is not.) */
+  private checkSizeBound(payload: Record<string, unknown> | undefined): void {
+    const bound = this.contract?.knobs.maxBidSizeBytes;
+    if (typeof bound !== 'number') return;
+    const size = payload?.size;
+    if (typeof size !== 'number') return;
+    if (size > bound) throw new Error(`bid size ${size} exceeds the contract's bound ${bound} (§2.1 maxBidSizeBytes)`);
   }
 
   private mustBid(bidId: string): Bid {

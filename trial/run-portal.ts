@@ -102,7 +102,14 @@ const wiring = wireTransportOptions(rig, {
 
 const hostTransport = new PortalTransport(wiring.host);
 await hostTransport.connect();
-const host = new FloorRoomHost(hostTransport, new FluidFairnessLogic({ leaseMs }), {
+// §3: the quiet lease is a CONTRACT value with a stated provenance. An
+// operator's --idle-after is one — labelled as an operator's choice, never
+// mistaken for a measurement. 'off' is a lease no run reaches.
+const idleContract = {
+  idleAfterMs: Number.isFinite(idleAfterMs) ? idleAfterMs : Number.MAX_SAFE_INTEGER,
+  idleAfterProvenance: { kind: 'operator' as const, note: `--idle-after ${idleArg} (run argument, not a measurement)` },
+};
+const host = new FloorRoomHost(hostTransport, new FluidFairnessLogic({ leaseMs, ...idleContract }), {
   tickMs: 1000,
   ledgerPath,
   idleAfterMs,

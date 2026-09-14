@@ -9,8 +9,8 @@
  *
  * Grammar (one line per op):
  *   !floor join
- *   !floor bid readiness=intent|prepared|urgent [subject=<ref>] [digest=<d>] [expires=+30s]
- *   !floor amend <bidId> [readiness=…] [subject=…] [digest=…]
+ *   !floor bid readiness=intent|prepared|urgent [subject=<ref>] [digest=<d>] [size=<bytes>] [expires=+30s]
+ *   !floor amend <bidId> [readiness=…] [subject=…] [digest=…] [size=…]
  *   !floor cancel <bidId>
  *   !floor accept <grantId>
  *   !floor decline <grantId> [reason=stale-head]   (any other reason text = the holder's own decline; text dropped)

@@ -138,6 +138,21 @@ export interface Receipt {
   cause?: DeclineCause | RevokeCause;
 }
 
+/** §3 — where a contract's `idleAfterMs` came from. It is a static,
+ *  digested contract value with a STATED provenance, never a runtime-
+ *  adaptive one: a re-calibration is a contract revision (new logicEpoch),
+ *  as any knob change is. */
+export type IdleProvenance =
+  /** The trial's 60 s, tuned to a standing-ready bot fleet — a lab value,
+   *  labelled as such, not a measurement of any room. */
+  | { kind: 'lab-default'; note: string }
+  /** A completed stage-0a measurement of the room's own binding, cited by
+   *  the receipt: the aggregate report's digest (declared in the receipt's
+   *  manifest) and the deterministic rule that produced the number. */
+  | { kind: 'measured'; receipt: string; reportSha256: string; rule: string; room: string }
+  /** An operator set it for a run and said so. Not a measurement. */
+  | { kind: 'operator'; note: string };
+
 /** §3 — the announced logic contract: a real policy boundary. Versioned,
  *  digested, acknowledged before bids/grants bind it. */
 export interface LogicContract {
